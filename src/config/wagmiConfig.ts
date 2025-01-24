@@ -1,9 +1,14 @@
+// Make sure to import `createConfig` from `@privy-io/wagmi`, not `wagmi`
+import { createConfig } from "@privy-io/wagmi";
 import { liskSepolia } from "viem/chains";
 import { http } from "wagmi";
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
-export const config = getDefaultConfig({
-  appName: "Fiatsend",
-  projectId: "788c92c6f1abab2c8b0cc98c5a952607",
-  chains: [liskSepolia],
+// Replace this with your app's required chains
+export const config = createConfig({
+  chains: [liskSepolia], // Pass your required chains as an array
+  transports: {
+    [liskSepolia.id]: http(),
+    // For each of your required chains, add an entry to `transports` with
+    // a key of the chain's `id` and a value of `http()`
+  },
 });

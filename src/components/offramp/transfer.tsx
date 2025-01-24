@@ -8,6 +8,7 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useSimulateContract,
+  usePrepareTransactionRequest,
 } from "wagmi";
 import FiatSendABI from "@/abis/FiatSend.json";
 import { toast } from "react-hot-toast";
@@ -15,6 +16,11 @@ import TetherTokenABI from "@/abis/TetherToken.json";
 import Link from "next/link";
 import { formatUnits, parseUnits } from "viem";
 import LoadingScreen from "./LoadingScreen";
+import { TransactionStatus } from "./TransactionStatus";
+import { ClockIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { TransactionHistory } from "./TransactionHistory";
+import { SettingsModal } from "./SettingsModal";
+import { TransactionDetails } from "./TransactionDetails";
 
 interface Token {
   symbol: string;
@@ -50,6 +56,11 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const amount = parseUnits(usdtAmount, 18);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [showStatus, setShowStatus] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showTransactionDetails, setShowTransactionDetails] = useState(false);
 
   //simulate data
   const {
@@ -179,6 +190,9 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
       if (!tx) {
         throw new Error("Transaction failed");
       }
+
+      setTxHash("0x123..."); // Replace with actual tx hash
+      setShowStatus(true);
     } catch (error: any) {
       console.error("Swap error:", error);
       handleTransactionError(error, "convert");
@@ -303,30 +317,57 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
     return <LoadingScreen />;
   }
 
+  if (showStatus && txHash) {
+    return (
+      <TransactionStatus
+        txHash={txHash}
+        onComplete={() => {
+          // Handle completion (e.g., reset form, show success message)
+          setShowStatus(false);
+          setTxHash(null);
+        }}
+      />
+    );
+  }
+
   return (
     <>
       {transactionStatus === "completed" && <SuccessScreen />}
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
         {/* Header with Gradient */}
         <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-8 text-white">
-          <h1 className="text-2xl font-bold">Send with Connected Wallet</h1>
-          <p className="mt-2 opacity-90">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Send with Wallet</h2>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowHistory(true)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <ClockIcon className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <Cog6ToothIcon className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+          <p className="mt-2">
             Convert your USDT to GHS directly from your wallet
           </p>
 
           {/* Exchange Rate Cards */}
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4">
-              <p className="text-sm font-medium opacity-90">Exchange Rate</p>
+          <div className="grid sm:grid-cols-2 z-0 grid-cols-1 gap-4 mt-6">
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-sm font-medium">Exchange Rate</p>
               <div className="flex items-baseline mt-1">
                 <p className="text-2xl font-bold">1 USDT</p>
                 <p className="text-lg ml-2">= {exchangeRate.toFixed(2)} GHS</p>
               </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4">
-              <p className="text-sm font-medium opacity-90">
-                Available Liquidity
-              </p>
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-sm font-medium">Available Liquidity</p>
               <p className="text-2xl font-bold mt-1">
                 {reserve.toFixed(2)} GHS
               </p>
@@ -342,11 +383,11 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
               <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg">
                 1
               </div>
-              <h2 className="text-xl font-semibold">Enter Amount</h2>
+              <h2 className="text-xl font-semibold">Enter Amount in GHS</h2>
             </div>
 
             <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-              <div className="relative">
+              <div className="">
                 <input
                   type="number"
                   value={ghsAmount}
@@ -359,9 +400,6 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
                   className="w-full p-4 pr-24 text-3xl font-bold rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   placeholder="0.00"
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  <span className="text-gray-400 text-xl font-medium">GHS</span>
-                </div>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500">You&apos;ll send</span>
@@ -381,7 +419,7 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
               <h2 className="text-xl font-semibold">Select Token</h2>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {stablecoins.map((token) => (
                 <button
                   key={token.symbol}
@@ -393,7 +431,7 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
                     selectedQuoteToken.symbol === token.symbol
                       ? "border-purple-500 bg-purple-50"
                       : "border-gray-200 hover:border-purple-300"
-                  } ${token.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${token.disabled ? "cursor-not-allowed" : ""}`}
                 >
                   <div className="flex items-center space-x-2">
                     <Image
@@ -463,6 +501,20 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
                 </button>
               )}
 
+              <div className="mt-4">
+                <TransactionDetails
+                  isOpen={showTransactionDetails}
+                  onToggle={() =>
+                    setShowTransactionDetails(!showTransactionDetails)
+                  }
+                  gasFee="0.0003"
+                  merchantFee="2.65"
+                  protocolFee="0.00"
+                  totalFees="2.65"
+                  estimatedTime="~25s"
+                />
+              </div>
+
               <button
                 onClick={handleSendFiat}
                 disabled={
@@ -512,6 +564,10 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
           </div>
         </div>
       </div>
+      {showHistory && (
+        <TransactionHistory onClose={() => setShowHistory(false)} />
+      )}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </>
   );
 };

@@ -4,25 +4,23 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useReadContract } from "wagmi";
-import { formatUnits } from "viem";
-import FSendTokenABI from "@/abis/FSEND.json"; // Make sure you have this ABI
+import { usePrivy } from "@privy-io/react-auth";
 import WalletDrawer from "../ui/drawer/wallet-drawer";
+import { useReadContract } from "wagmi";
+import { formatUnits } from "viem";
+import FSendTokenABI from "@/abis/FSEND.json";
 
-const FSEND_TOKEN_ADDRESS = "0x47e71D5B59A0c8cA50a7d5e268434aA0F7E171A2"; // Add your FSEND token contract address
+const FSEND_TOKEN_ADDRESS = "0x47e71D5B59A0c8cA50a7d5e268434aA0F7E171A2";
 
-const TokenBalance = () => {
-  const { address, isConnected } = useAccount();
-
+const TokenBalance = ({ userAddress }: { userAddress: string | null }) => {
   const { data: balance } = useReadContract({
     address: FSEND_TOKEN_ADDRESS,
     abi: FSendTokenABI.abi,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: userAddress ? [userAddress] : undefined,
   });
 
-  if (!isConnected) return null;
+  if (!userAddress) return null;
 
   const formattedBalance = balance
     ? Number(formatUnits(balance as bigint, 18)).toFixed(2)
@@ -56,17 +54,19 @@ const navItems = [
 
 const Navbar = () => {
   const pathname = usePathname();
-
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { login, authenticated, user } = usePrivy();
+  const userAddress = user?.wallet?.address || null;
 
   const toggleDrawer = () => {
     setIsDrawerOpen(!isDrawerOpen);
   };
+
   return (
-    <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
+    <nav className="fixed w-full m-6 bg-white/80 border-b rounded-lg z-1000 border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - Logo and Navigation */}
+          {/* Left Side - Logo and Navigation */}
           <div className="flex items-center space-x-8">
             <Link
               href="/"
@@ -74,10 +74,10 @@ const Navbar = () => {
             >
               <Image
                 src="/images/fiatsend.png"
-                height={32}
                 width={32}
-                alt="Fiatsend Icon"
-                className="rounded-lg"
+                height={32}
+                alt="FSEND"
+                className="rounded-full"
               />
               <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 Offramps
@@ -136,22 +136,32 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right side - Wallet Connection */}
+          {/* Right Side - Auth & Wallet */}
           <div className="flex items-center space-x-4">
-            <TokenBalance />
+            {authenticated && <TokenBalance userAddress={userAddress} />}
             <div className="hidden sm:block">
-              <ConnectButton
-                chainStatus="icon"
-                showBalance={false}
-                accountStatus={{
-                  smallScreen: "avatar",
-                  largeScreen: "full",
-                }}
-              />
+              {authenticated ? (
+                <button
+                  onClick={toggleDrawer}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition"
+                >
+                  Wallet
+                </button>
+              ) : (
+                <button
+                  onClick={login}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                >
+                  Login
+                </button>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
-            <button className="md:hidden p-2 rounded-lg hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all">
+            <button
+              onClick={toggleDrawer}
+              className="md:hidden p-2 rounded-lg hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all"
+            >
               <svg
                 className="w-6 h-6"
                 fill="none"

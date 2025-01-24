@@ -20,7 +20,7 @@ const TermsConditionsModal: React.FC<TermsConditionsModalProps> = ({
     {
       title: "Introduction",
       content:
-        "Welcome to Fiatsend. These terms and conditions Terms govern the creation, usage, and management of Non-Fungible Tokens (NFTs) issued via Fiatsend’s offramp platform. By participating in the NFT creation process, you agree to these Terms.",
+        "Welcome to Fiatsend Identity. These terms and conditions Terms govern the creation, usage, and management of Non-Fungible Tokens (NFTs) issued via Fiatsend’s offramp platform. By participating in the NFT creation process, you agree to these Terms.",
     },
 
     {

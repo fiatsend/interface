@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { useTokenFaucet } from "@/hooks/use-token-faucet";
 import { toast } from "react-hot-toast";
-import { useAccount, useConnect, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { liskSepolia } from "viem/chains";
 import { formatDistanceToNow } from "date-fns";
 import NeedGas from "@/components/need-gas";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { usePrivy } from "@privy-io/react-auth";
 import Image from "next/image";
 
 const Faucet = () => {
@@ -24,6 +24,7 @@ const Faucet = () => {
   const [hasSwitchedChain, setHasSwitchedChain] = useState(false);
   const { isConnected } = useAccount();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { login } = usePrivy();
 
   useEffect(() => {
     if (chain && chain.id !== liskSepolia.id) {
@@ -258,7 +259,12 @@ const Faucet = () => {
                   <p className="text-gray-600">
                     Connect your wallet to claim tokens
                   </p>
-                  <ConnectButton />
+                  <button
+                    onClick={login}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                  >
+                    Login
+                  </button>
                 </div>
               )}
             </div>

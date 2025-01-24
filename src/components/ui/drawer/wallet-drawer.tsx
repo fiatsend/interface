@@ -1,10 +1,13 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useReadContract } from "wagmi";
+import { usePrivy } from "@privy-io/react-auth";
+import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import FSEND_ABI from "@/abis/FSEND.json"; // Replace with actual FSEND ABI
 import USDT_ABI from "@/abis/TetherToken.json"; // Replace with actual USDT ABI
 import GHSFIAT_ABI from "@/abis/GHSFIAT.json"; // Replace with actual GHSFIAT ABI
+import { FaEthereum, FaDollarSign, FaCoins } from "react-icons/fa"; // Example icons
+import Image from "next/image";
 
 interface WalletDrawerProps {
   isOpen: boolean;
@@ -12,29 +15,39 @@ interface WalletDrawerProps {
 }
 
 const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
-  const { address } = useAccount();
+  const { user, logout } = usePrivy();
+  const walletAddress =
+    user?.wallet?.address?.substring(0, 6) +
+    "..." +
+    user?.wallet?.address?.substring(user?.wallet?.address?.length - 4);
 
-  // Fetch token balances
   const { data: fsendBalance } = useReadContract({
-    address: "0xYourFSENDTokenAddress", // Replace with actual FSEND token address
+    address: "0x47e71D5B59A0c8cA50a7d5e268434aA0F7E171A2", // Replace with actual FSEND token address
     abi: FSEND_ABI.abi,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: [walletAddress],
   });
 
   const { data: usdtBalance } = useReadContract({
     address: "0xAE134a846a92CA8E7803Ca075A1a0EE854Cd6168", // USDT address
     abi: USDT_ABI.abi,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: [walletAddress],
   });
 
   const { data: ghsfiatBalance } = useReadContract({
     address: "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A", // GHSFIAT address
     abi: GHSFIAT_ABI.abi,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: [walletAddress],
   });
+
+  const formatBalance = (bal: bigint | unknown) => {
+    if (typeof bal === "bigint") {
+      return Number(formatUnits(bal, 18)).toFixed(2);
+    }
+    return "0.00";
+  };
 
   return (
     <AnimatePresence>
@@ -44,7 +57,7 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black bg-opacity-50 z-100"
             onClick={onClose}
           />
           <motion.div
@@ -52,7 +65,10 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3 }}
-            className="fixed right-0 top-0 h-full w-64 bg-white shadow-lg z-50 p-4"
+            className="fixed right-0 top-0 h-full w-64 bg-white shadow-lg z-100 p-6 rounded-lg transition-shadow duration-300 ease-in-out hover:shadow-2xl"
+            style={{
+              background: "linear-gradient(135deg, #f3f3f3 0%, #f3f3f3 100%)",
+            }}
           >
             <button
               onClick={onClose}
@@ -73,33 +89,47 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
                 />
               </svg>
             </button>
-            <h2 className="text-lg font-bold mb-4">Wallet Information</h2>
-            <p className="mb-2">Address: {address}</p>
-            <div className="space-y-2">
-              <div>
-                <span className="font-medium">FSEND Balance: </span>
-                <span>
-                  {fsendBalance
-                    ? formatUnits(fsendBalance as bigint, 18)
-                    : "Loading..."}
-                </span>
+
+            <h2 className="text-lg font-bold mb-4 text-purple-600">
+              Wallet Information
+            </h2>
+            <p className="mb-2 text-gray-600">
+              Address: {walletAddress || "Not connected"}
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
+                <Image
+                  src="/images/fiatsend.png"
+                  width={16}
+                  height={16}
+                  alt="FSEND"
+                  className="rounded-full"
+                />
+                <span className="font-medium">FSEND: </span>
+                <span>{formatBalance(fsendBalance)}</span>
               </div>
-              <div>
-                <span className="font-medium">USDT Balance: </span>
-                <span>
-                  {usdtBalance
-                    ? formatUnits(usdtBalance as bigint, 18)
-                    : "Loading..."}
-                </span>
+              <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
+                <FaEthereum className="text-purple-600 mr-2" />
+                <span className="font-medium">ETH: </span>
+                <span> -- </span>
               </div>
-              <div>
-                <span className="font-medium">GHSFIAT Balance: </span>
-                <span>
-                  {ghsfiatBalance
-                    ? formatUnits(ghsfiatBalance as bigint, 18)
-                    : "Loading..."}
-                </span>
+              <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
+                <FaDollarSign className="text-green-600 mr-2" />
+                <span className="font-medium">USDT: </span>
+                <span>{formatBalance(usdtBalance)}</span>
               </div>
+              <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
+                <FaCoins className="text-yellow-600 mr-2" />
+                <span className="font-medium">GHSFIAT: </span>
+                <span>{formatBalance(ghsfiatBalance)}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-purple-600 p-2 rounded-lg text-white hover:bg-red-700"
+              >
+                Logout
+              </button>
             </div>
           </motion.div>
         </>

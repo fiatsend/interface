@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveComponent }) => {
       {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black bg-opacity-50 z-100"
           onClick={toggleSidebar}
         />
       )}
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveComponent }) => {
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 bg-gray-800 text-white rounded-md"
+          className="fixed top-4 left-4 z-100 p-2 bg-gray-800 text-white rounded-md"
         >
           {isOpen ? (
             <XMarkIcon className="h-6 w-6" />
@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setActiveComponent }) => {
       {/* Sidebar */}
       <aside
         className={`
-                    fixed top-0 left-0 h-full bg-gray-800 text-white z-50 transition-all duration-300 ease-in-out
+                    fixed top-0 left-0 h-full bg-gray-800 text-white z-100 transition-all duration-300 ease-in-out
                     ${
                       isMobile
                         ? isOpen

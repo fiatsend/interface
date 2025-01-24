@@ -11,12 +11,16 @@ import FiatSendABI from "@/abis/FiatSend.json";
 import { useReadContract } from "wagmi";
 import GHSFIATABI from "@/abis/GHSFIAT.json";
 import Link from "next/link";
+import { NFTTransfer } from "@/components/offramp/NFTTransfer";
+import { AgentWithdraw } from "@/components/offramp/AgentWithdraw";
 
 const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
 const GHSFIAT_ADDRESS = "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A";
 
 const OfframpPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"receive" | "transfer">("receive");
+  const [activeTab, setActiveTab] = useState<"send" | "nft-transfer" | "agent">(
+    "send"
+  );
   const [exchangeRate, setExchangeRate] = useState<number>(14);
   const [fiatsendReserves, setFiatsendReserves] = useState<number>(0);
 
@@ -99,40 +103,47 @@ const OfframpPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
         <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-xl shadow-sm p-1 mb-4 sm:mb-8 flex w-full sm:w-auto">
+          <div className="bg-white rounded-xl shadow-sm p-1 mb-8 flex overflow-x-auto">
             <button
-              onClick={() => setActiveTab("receive")}
-              className={`flex-1 sm:flex-none py-2 px-4 sm:px-6 rounded-lg transition-all duration-200 text-sm sm:text-base ${
-                activeTab === "receive"
+              onClick={() => setActiveTab("send")}
+              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+                activeTab === "send"
                   ? "bg-purple-600 text-white"
                   : "text-gray-600 hover:text-purple-600"
               }`}
             >
-              Transfer to fiatsend.eth
+              Exchange
             </button>
             <button
-              onClick={() => setActiveTab("transfer")}
-              className={`py-2 px-6 rounded-lg transition-all duration-200 ${
-                activeTab === "transfer"
+              onClick={() => setActiveTab("nft-transfer")}
+              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+                activeTab === "nft-transfer"
                   ? "bg-purple-600 text-white"
                   : "text-gray-600 hover:text-purple-600"
               }`}
             >
-              Send with wallet
+              Transfer
+            </button>
+            <button
+              onClick={() => setActiveTab("agent")}
+              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+                activeTab === "agent"
+                  ? "bg-purple-600 text-white"
+                  : "text-gray-600 hover:text-purple-600"
+              }`}
+            >
+              Withdraw
             </button>
           </div>
         </div>
 
         {/* Active Component */}
         <div className="transition-all duration-300">
-          {activeTab === "receive" ? (
-            <ReceiveStablecoins
-              reserve={fiatsendReserves}
-              exchangeRate={exchangeRate}
-            />
-          ) : (
+          {activeTab === "send" && (
             <Transfer reserve={fiatsendReserves} exchangeRate={exchangeRate} />
           )}
+          {activeTab === "nft-transfer" && <NFTTransfer />}
+          {activeTab === "agent" && <AgentWithdraw />}
         </div>
       </div>
     </div>

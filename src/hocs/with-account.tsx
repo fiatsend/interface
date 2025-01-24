@@ -1,70 +1,124 @@
 import React, { useEffect, useState } from "react";
-import { useAccount, useReadContract } from "wagmi";
 import { useRouter } from "next/navigation";
-import FiatsendNFT from "@/abis/MomoNFT.json";
-import Spinner from "@/components/spinner";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { formatUnits } from "viem";
-import toast from "react-hot-toast";
+import { usePrivy } from "@privy-io/react-auth";
+import { useReadContract } from "wagmi";
+import MomoNFTABI from "@/abis/MomoNFT.json";
 
-const withFiatsendNFT = (WrappedComponent: React.ComponentType) => {
-  const WithFiatsendNFT: React.FC = (props) => {
-    const { address, isConnecting, isConnected } = useAccount();
-    const [loading, setLoading] = useState(true);
+const NFTContract = "0x063EC4E9d7C55A572d3f24d600e1970df75e84cA";
+
+const withFiatsendNFT = <WrappedComponent extends React.ComponentType<any>>(
+  WrappedComponent: WrappedComponent
+) => {
+  return function WithFiatsendNFTWrapper(
+    props: React.ComponentProps<WrappedComponent>
+  ) {
     const router = useRouter();
+    const { authenticated, user, login } = usePrivy();
+    const [hasNFT, setHasNFT] = useState<boolean | null>(null);
+    const [isChecking, setIsChecking] = useState<boolean>(true);
 
-    const {
-      data: NFTBalance,
-      isLoading: isBalanceLoading,
-      isError,
-    } = useReadContract({
-      address: "0x701ECdb6823fc3e258c7E291D2D8C16BC52Fbe94",
-      abi: FiatsendNFT.abi,
+    const { data: balance, isLoading } = useReadContract({
+      address: NFTContract,
+      abi: MomoNFTABI.abi,
       functionName: "balanceOf",
-      args: address ? [address as `0x${string}`] : undefined,
+      args: [user?.wallet?.address],
     });
 
-    // Check if the user owns the required NFT
     useEffect(() => {
-      const checkNFTOwnership = async () => {
-        if (!address) return; // Wait for address to be available
-        if (isBalanceLoading) return; // Wait for balance to load
+      if (!isLoading) {
+        setHasNFT(balance ? Number(balance) > 0 : false); // Convert balance to a number
+        setIsChecking(false);
+      }
+    }, [balance, isLoading]);
 
-        try {
-          const formattedBalance = Number(formatUnits(NFTBalance as bigint, 0));
-          if (formattedBalance < 1) {
-            router.push("/onboarding");
-          }
-        } catch (error: any) {
-          toast.error("Error checking NFT ownership.");
-          router.push("/onboarding");
-        } finally {
-          setLoading(false); // Set loading to false after checking
-        }
-      };
-
-      checkNFTOwnership();
-    }, [address, NFTBalance, isBalanceLoading, router, isConnected]);
-
-    // Show spinner while connecting or loading
-    if (isBalanceLoading) {
-      return <Spinner />;
+    if (isChecking) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="relative w-16 h-16 mx-auto">
+              <div className="absolute inset-0 rounded-full border-4 border-purple-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-t-purple-600 animate-spin"></div>
+            </div>
+            <p className="text-gray-600">Checking account status...</p>
+          </div>
+        </div>
+      );
     }
 
-    // Show connect button if not connected
-    if (!isConnected || !address) {
+    if (!authenticated) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <h1 className="mb-4 text-lg font-semibold">Connect Your Wallet</h1>
-          <ConnectButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div className="text-center space-y-4">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Sign In to Continue
+              </h1>
+              <p className="text-gray-600">Please sign in to access Fiatsend</p>
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={login}
+                className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!hasNFT) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                <svg
+                  className="w-8 h-8 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Account Required
+              </h1>
+              <p className="text-gray-600">
+                You need a Fiatsend NFT to access this feature
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/onboarding")}
+              className="w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all"
+            >
+              Get Fiatsend NFT
+            </button>
+            <div className="border-t pt-4">
+              <p className="text-sm text-gray-600 text-center">
+                Already have an account?{" "}
+                <button
+                  onClick={() => router.push("/check")}
+                  className="text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  Check Status
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
       );
     }
 
     return <WrappedComponent {...props} />;
   };
-
-  return WithFiatsendNFT;
 };
 
 export default withFiatsendNFT;

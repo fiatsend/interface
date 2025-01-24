@@ -4,33 +4,16 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/navbar";
 import { Toaster } from "react-hot-toast";
-import {
-  RainbowKitProvider,
-  getDefaultWallets,
-  darkTheme,
-} from "@rainbow-me/rainbowkit";
-import { WagmiConfig, createConfig } from "wagmi";
-import { liskSepolia } from "viem/chains";
-import "@rainbow-me/rainbowkit/styles.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { PrivyProvider } from "@privy-io/react-auth";
 import StickyNavbar from "@/components/layout/StickyNavbar";
 import Script from "next/script";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "@privy-io/wagmi";
+import { config } from "@/config/wagmiConfig";
+import { liskSepolia } from "viem/chains";
+import { SmartWalletsProvider } from "@privy-io/react-auth/smart-wallets";
 
 const inter = Inter({ subsets: ["latin"] });
-
-const { connectors } = getDefaultWallets({
-  appName: "FiatSend",
-  projectId: "788c92c6f1abab2c8b0cc98c5a952607",
-});
-
-const config = getDefaultConfig({
-  appName: "Fiatsend",
-  projectId: "788c92c6f1abab2c8b0cc98c5a952607",
-  chains: [liskSepolia],
-  ssr: true, // If your dApp uses server side rendering (SSR)
-});
-
 const queryClient = new QueryClient();
 
 export default function RootLayout({
@@ -51,20 +34,24 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <QueryClientProvider client={queryClient}>
-          <WagmiConfig config={config}>
-            <RainbowKitProvider
-              theme={darkTheme({
-                accentColor: "#4F46E5",
-                borderRadius: "small",
-              })}
-            >
-              <Navbar />
-              {children}
+        <PrivyProvider
+          appId="cm3ic9ts3035j11tfo4fbjdt2"
+          config={{
+            defaultChain: liskSepolia,
+            supportedChains: [liskSepolia],
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <WagmiProvider config={config}>
+              <SmartWalletsProvider>
+                <Navbar />
+                {children}
+              </SmartWalletsProvider>
               <Toaster position="top-center" />
-            </RainbowKitProvider>
-          </WagmiConfig>
-        </QueryClientProvider>
+            </WagmiProvider>
+          </QueryClientProvider>
+        </PrivyProvider>
+
         <StickyNavbar />
       </body>
     </html>

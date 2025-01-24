@@ -33,8 +33,8 @@ const navItems = [
     activeIcon: CurrencyDollarIconSolid,
   },
   {
-    name: "Profile",
-    path: "/profile",
+    name: "Docs",
+    path: "https://docs.fiatsend.network/fiatsend-points/alewa-testnet",
     icon: DocumentTextIcon,
     activeIcon: DocumentTextIconSolid,
   },
@@ -49,7 +49,7 @@ const StickyNavbar: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 sm:hidden safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/80 z-100 backdrop-blur-lg border-t border-gray-200 sm:hidden safe-area-bottom">
       <div className="max-w-md mx-auto px-4">
         <div className="flex justify-around items-center py-2">
           {navItems.map((item) => {
