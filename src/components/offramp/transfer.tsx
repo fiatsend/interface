@@ -15,6 +15,11 @@ import TetherTokenABI from "@/abis/TetherToken.json";
 import Link from "next/link";
 import { formatUnits, parseUnits } from "viem";
 import LoadingScreen from "./LoadingScreen";
+import { TransactionStatus } from "./TransactionStatus";
+import { ClockIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { TransactionHistory } from "./TransactionHistory";
+import { SettingsModal } from "./SettingsModal";
+import { TransactionDetails } from "./TransactionDetails";
 
 interface Token {
   symbol: string;
@@ -50,6 +55,11 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const amount = parseUnits(usdtAmount, 18);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [showStatus, setShowStatus] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showTransactionDetails, setShowTransactionDetails] = useState(false);
 
   //simulate data
   const {
@@ -179,6 +189,9 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
       if (!tx) {
         throw new Error("Transaction failed");
       }
+
+      setTxHash("0x123..."); // Replace with actual tx hash
+      setShowStatus(true);
     } catch (error: any) {
       console.error("Swap error:", error);
       handleTransactionError(error, "convert");
@@ -303,13 +316,42 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
     return <LoadingScreen />;
   }
 
+  if (showStatus && txHash) {
+    return (
+      <TransactionStatus
+        txHash={txHash}
+        onComplete={() => {
+          // Handle completion (e.g., reset form, show success message)
+          setShowStatus(false);
+          setTxHash(null);
+        }}
+      />
+    );
+  }
+
   return (
     <>
       {transactionStatus === "completed" && <SuccessScreen />}
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
         {/* Header with Gradient */}
         <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-8 text-white">
-          <h1 className="text-2xl font-bold">Send with Connected Wallet</h1>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Send with Wallet</h2>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowHistory(true)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <ClockIcon className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <Cog6ToothIcon className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
           <p className="mt-2 opacity-90">
             Convert your USDT to GHS directly from your wallet
           </p>
@@ -463,6 +505,20 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
                 </button>
               )}
 
+              <div className="mt-4">
+                <TransactionDetails
+                  isOpen={showTransactionDetails}
+                  onToggle={() =>
+                    setShowTransactionDetails(!showTransactionDetails)
+                  }
+                  gasFee="0.0003"
+                  merchantFee="2.65"
+                  protocolFee="0.00"
+                  totalFees="2.65"
+                  estimatedTime="~25s"
+                />
+              </div>
+
               <button
                 onClick={handleSendFiat}
                 disabled={
@@ -512,6 +568,10 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
           </div>
         </div>
       </div>
+      {showHistory && (
+        <TransactionHistory onClose={() => setShowHistory(false)} />
+      )}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </>
   );
 };

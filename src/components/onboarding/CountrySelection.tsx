@@ -4,6 +4,7 @@ import React, { useState } from "react";
 export interface Country {
   name: string;
   code: string;
+  icon?: string; // Add icon property as optional
   flag: string; // URL to the flag image
 }
 
