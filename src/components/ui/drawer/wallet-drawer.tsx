@@ -16,7 +16,8 @@ interface WalletDrawerProps {
 
 const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
   const { user, logout } = usePrivy();
-  const walletAddress =
+  const walletAddress = user?.wallet?.address || null;
+  const shortenedAddress =
     user?.wallet?.address?.substring(0, 6) +
     "..." +
     user?.wallet?.address?.substring(user?.wallet?.address?.length - 4);
@@ -25,28 +26,27 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
     address: "0x47e71D5B59A0c8cA50a7d5e268434aA0F7E171A2", // Replace with actual FSEND token address
     abi: FSEND_ABI.abi,
     functionName: "balanceOf",
-    args: [walletAddress],
+    args: walletAddress ? [walletAddress] : undefined,
   });
 
   const { data: usdtBalance } = useReadContract({
     address: "0xAE134a846a92CA8E7803Ca075A1a0EE854Cd6168", // USDT address
     abi: USDT_ABI.abi,
     functionName: "balanceOf",
-    args: [walletAddress],
+    args: walletAddress ? [walletAddress] : undefined,
   });
 
   const { data: ghsfiatBalance } = useReadContract({
     address: "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A", // GHSFIAT address
     abi: GHSFIAT_ABI.abi,
     functionName: "balanceOf",
-    args: [walletAddress],
+    args: walletAddress ? [walletAddress] : undefined,
   });
 
   const formatBalance = (bal: bigint | unknown) => {
-    if (typeof bal === "bigint") {
-      return Number(formatUnits(bal, 18)).toFixed(2);
-    }
-    return "0.00";
+    if (bal) {
+      return Number(formatUnits(bal as bigint, 18)).toFixed(2);
+    } else return "0.00";
   };
 
   return (
@@ -94,7 +94,7 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
               Wallet Information
             </h2>
             <p className="mb-2 text-gray-600">
-              Address: {walletAddress || "Not connected"}
+              Address: {shortenedAddress || "Not connected"}
             </p>
 
             <div className="space-y-4">
