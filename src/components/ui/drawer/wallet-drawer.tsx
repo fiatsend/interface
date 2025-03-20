@@ -1,7 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePrivy } from "@privy-io/react-auth";
-import { useReadContract } from "wagmi";
+import { useBalance, useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import FSEND_ABI from "@/abis/FSEND.json"; // Replace with actual FSEND ABI
 import USDT_ABI from "@/abis/TetherToken.json"; // Replace with actual USDT ABI
@@ -47,6 +47,11 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
     if (bal) {
       return Number(formatUnits(bal as bigint, 18)).toFixed(2);
     } else return "0.00";
+  };
+
+  const logoutUser = () => {
+    logout();
+    onClose();
   };
 
   return (
@@ -109,11 +114,11 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
                 <span className="font-medium">FSEND: </span>
                 <span>{formatBalance(fsendBalance)}</span>
               </div>
-              <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
+              {/* <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
                 <FaEthereum className="text-purple-600 mr-2" />
                 <span className="font-medium">ETH: </span>
-                <span> -- </span>
-              </div>
+                <span> {formatBalance(ethBalance)} </span>
+              </div> */}
               <div className="bg-gray-100 p-4 rounded-lg shadow-md flex items-center">
                 <FaDollarSign className="text-green-600 mr-2" />
                 <span className="font-medium">USDT: </span>
@@ -125,7 +130,7 @@ const WalletDrawer: React.FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
                 <span>{formatBalance(ghsfiatBalance)}</span>
               </div>
               <button
-                onClick={logout}
+                onClick={logoutUser}
                 className="bg-purple-600 p-2 rounded-lg text-white hover:bg-red-700"
               >
                 Logout

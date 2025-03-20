@@ -49,7 +49,7 @@ export const NFTTransfer = () => {
         <label className="block text-sm font-medium text-gray-700">
           Amount
         </label>
-        <div className="relative">
+        <div>
           <input
             type="number"
             value={amount}
@@ -57,9 +57,7 @@ export const NFTTransfer = () => {
             placeholder="Enter amount in GHS"
             className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           />
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <span className="text-gray-500">GHS</span>
-          </div>
+          <span className="text-gray-500 ml-2">GHS</span>
         </div>
       </div>
 
