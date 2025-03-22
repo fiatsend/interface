@@ -6,25 +6,21 @@ import { toast } from "react-hot-toast";
 import { useAccount, useSwitchChain } from "wagmi";
 import { liskSepolia } from "viem/chains";
 import { formatDistanceToNow } from "date-fns";
-import NeedGas from "@/components/need-gas";
 import { usePrivy } from "@privy-io/react-auth";
+import NeedGas from "@/components/need-gas";
 import Image from "next/image";
 
 const Faucet = () => {
-  const {
-    claimTokens,
-    isClaimLoading,
-    isSuccess,
-    canClaim,
-    timeRemaining,
-    formattedTime,
-  } = useTokenFaucet();
+  const { isClaimLoading, canClaim, timeRemaining, formattedTime } =
+    useTokenFaucet();
   const { chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const [hasSwitchedChain, setHasSwitchedChain] = useState(false);
   const { isConnected } = useAccount();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { login } = usePrivy();
+  const { login, user } = usePrivy();
+
+  const userAddress = user?.wallet?.address;
 
   useEffect(() => {
     if (chain && chain.id !== liskSepolia.id) {
@@ -72,47 +68,46 @@ const Faucet = () => {
       }
 
       setIsProcessing(true);
-      await claimTokens();
 
-      if (isSuccess) {
-        toast.success("Tokens claimed successfully!");
-        setIsProcessing(false);
+      const response = await fetch(
+        "https://67dd6a3b7e52ed014165.appwrite.global/claim",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user: userAddress }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (
+          errorData.error &&
+          errorData.error.includes("Cooldown period not met")
+        ) {
+          toast.error("Cooldown period not met. Please try again later.");
+        } else {
+          throw new Error("Failed to claim tokens");
+        }
       }
-    } catch (error: any) {
+
+      const data = await response.json();
+      toast.success("Tokens claimed successfully!");
+      console.log("Response data:", data);
+    } catch (error) {
       console.error("Claim error:", error);
-      handleClaimError(error);
+      if (
+        error instanceof Error &&
+        error.message !== "Failed to claim tokens"
+      ) {
+        toast.error("An unexpected error occurred.");
+      } else {
+        toast.error("Failed to claim tokens. Please try again.");
+      }
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handleClaimError = (error: any) => {
-    if (
-      error.message?.includes("Cooldown period not met") ||
-      error.message?.includes('function "requestTokens" reverted')
-    ) {
-      toast.error("Please wait before claiming again", {
-        duration: 4000,
-        icon: "⏳",
-      });
-      return;
-    }
-
-    if (
-      error.message?.includes("User rejected") ||
-      error.shortMessage?.includes("User rejected") ||
-      error.code === 4001
-    ) {
-      toast.error("Transaction cancelled", {
-        duration: 3000,
-        icon: "❌",
-      });
-      return;
-    }
-
-    toast.error("Failed to claim tokens. Please try again", {
-      duration: 4000,
-    });
   };
 
   return (

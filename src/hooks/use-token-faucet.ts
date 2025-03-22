@@ -10,7 +10,7 @@ import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
 
 const FAUCET_CONTRACT_ADDRESS =
-  "0x0e714082ca836F3432189Cd0568d69c35C8Ff8C7" as Address;
+  "0x811468d8b88a8eee5C396B2A2Cb3b4Aa06295Bc8" as Address;
 
 const COOLDOWN_TIME = 86400; // 24 hours in seconds
 
