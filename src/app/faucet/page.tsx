@@ -6,25 +6,22 @@ import { toast } from "react-hot-toast";
 import { useAccount, useSwitchChain } from "wagmi";
 import { liskSepolia } from "viem/chains";
 import { formatDistanceToNow } from "date-fns";
-import NeedGas from "@/components/need-gas";
 import { usePrivy } from "@privy-io/react-auth";
-import Image from "next/image";
+import NeedGas from "@/components/need-gas";
+import Turnstile from "react-turnstile"; // Import Turnstile component
 
 const Faucet = () => {
-  const {
-    claimTokens,
-    isClaimLoading,
-    isSuccess,
-    canClaim,
-    timeRemaining,
-    formattedTime,
-  } = useTokenFaucet();
+  const { isClaimLoading, canClaim, timeRemaining, formattedTime } =
+    useTokenFaucet();
   const { chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const [hasSwitchedChain, setHasSwitchedChain] = useState(false);
   const { isConnected } = useAccount();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { login } = usePrivy();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null); // Store Turnstile token
+  const { login, user } = usePrivy();
+
+  const userAddress = user?.wallet?.address;
 
   useEffect(() => {
     if (chain && chain.id !== liskSepolia.id) {
@@ -61,6 +58,11 @@ const Faucet = () => {
 
   const handleClaim = async () => {
     try {
+      if (!captchaToken) {
+        toast.error("Please complete the CAPTCHA before claiming tokens.");
+        return;
+      }
+
       if (chain?.id !== liskSepolia.id && !hasSwitchedChain) {
         await switchChain({ chainId: liskSepolia.id });
         return;
@@ -72,54 +74,56 @@ const Faucet = () => {
       }
 
       setIsProcessing(true);
-      await claimTokens();
 
-      if (isSuccess) {
-        toast.success("Tokens claimed successfully!");
-        setIsProcessing(false);
+      const response = await fetch(
+        "https://67dd6a3b7e52ed014165.appwrite.global/claim",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user: userAddress,
+            captchaToken, // Send CAPTCHA token to server
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (
+          errorData.error &&
+          errorData.error.includes("Cooldown period not met")
+        ) {
+          toast.error("Cooldown period not met. Please try again later.");
+        } else {
+          throw new Error("Failed to claim tokens");
+        }
       }
-    } catch (error: any) {
+
+      const data = await response.json();
+      toast.success("Tokens claimed successfully!");
+      console.log("Response data:", data);
+    } catch (error) {
       console.error("Claim error:", error);
-      handleClaimError(error);
+      if (
+        error instanceof Error &&
+        error.message !== "Failed to claim tokens"
+      ) {
+        toast.error("An unexpected error occurred.");
+      } else {
+        toast.error("Failed to claim tokens. Please try again.");
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleClaimError = (error: any) => {
-    if (
-      error.message?.includes("Cooldown period not met") ||
-      error.message?.includes('function "requestTokens" reverted')
-    ) {
-      toast.error("Please wait before claiming again", {
-        duration: 4000,
-        icon: "⏳",
-      });
-      return;
-    }
-
-    if (
-      error.message?.includes("User rejected") ||
-      error.shortMessage?.includes("User rejected") ||
-      error.code === 4001
-    ) {
-      toast.error("Transaction cancelled", {
-        duration: 3000,
-        icon: "❌",
-      });
-      return;
-    }
-
-    toast.error("Failed to claim tokens. Please try again", {
-      duration: 4000,
-    });
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 pt-20 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-8">
+        <div className="text-center my-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
             Testnet Faucet
           </h1>
@@ -132,86 +136,29 @@ const Faucet = () => {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
           {/* Token Distribution Section */}
           <div className="p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              {/* FSEND Card */}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-purple-100">
-                <div className="flex items-center space-x-3 mb-3 sm:mb-4">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-100 p-1.5 sm:p-2">
-                    <Image
-                      src="/images/fiatsend.png"
-                      width={24}
-                      height={24}
-                      alt="FSEND"
-                      className="rounded-full"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">FSEND</h3>
-                    <p className="text-sm text-gray-600">Governance Token</p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Daily Limit</span>
-                  <span className="text-lg font-bold text-purple-600">100</span>
-                </div>
-              </div>
-
-              {/* GHSFIAT Card */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-green-100 p-2">
-                    <Image
-                      src="/images/tokens/ghs.png"
-                      width={24}
-                      height={24}
-                      alt="GHSFIAT"
-                      className="rounded-full"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">GHSFIAT</h3>
-                    <p className="text-sm text-gray-600">Stablecoin</p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Daily Limit</span>
-                  <span className="text-lg font-bold text-green-600">100</span>
-                </div>
-              </div>
-
-              {/* USDT Card */}
-              <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border border-teal-100">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-teal-100 p-2">
-                    <Image
-                      src="/images/tokens/usdt.png"
-                      width={24}
-                      height={24}
-                      alt="USDT"
-                      className="rounded-full"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">USDT</h3>
-                    <p className="text-sm text-gray-600">Stablecoin</p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Daily Limit</span>
-                  <span className="text-lg font-bold text-teal-600">100</span>
-                </div>
-              </div>
-            </div>
-
             {/* Claim Section */}
             <div className="space-y-6">
+              {/* Turnstile Widget */}
+
               {isConnected ? (
                 <div className="flex flex-col items-center">
+                  {canClaim && !timeRemaining && (
+                    <Turnstile
+                      sitekey="0x4AAAAAABAtlmbVW2fPXlwn"
+                      onVerify={(token: string) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                    />
+                  )}
                   <button
                     onClick={handleClaim}
-                    disabled={isClaimLoading || !canClaim || isProcessing}
+                    disabled={
+                      isClaimLoading ||
+                      !canClaim ||
+                      isProcessing ||
+                      !captchaToken
+                    }
                     className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-medium text-sm transition-all ${
-                      isClaimLoading || isProcessing
+                      isClaimLoading || isProcessing || !captchaToken
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                         : !canClaim
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -261,7 +208,7 @@ const Faucet = () => {
                   </p>
                   <button
                     onClick={login}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
                   >
                     Login
                   </button>

@@ -27,7 +27,7 @@ const TokenBalance = ({ userAddress }: { userAddress: string | null }) => {
     : "0.00";
 
   return (
-    <div className="hidden sm:flex items-center mr-4 px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100">
+    <div className="hidden sm:flex items-center mr-4 px-3 py-2 rounded-lg bg-purple-50 border border-purple-100">
       <div className="w-5 h-5 rounded-full bg-purple-100 p-0.5 mr-2 flex items-center justify-center">
         <Image
           src="/images/fiatsend.png"
@@ -63,7 +63,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed w-full m-6 bg-white/80 border-b rounded-lg z-1000 border-gray-200">
+    <nav className="fixed w-full mx-6 mt-6 mb-12 bg-white/80 border-b rounded-lg z-1000 border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left Side - Logo and Navigation */}
@@ -150,7 +150,7 @@ const Navbar = () => {
               ) : (
                 <button
                   onClick={login}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition"
                 >
                   Login
                 </button>

@@ -24,6 +24,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Offramps by Fiatsend" />
+        <meta
+          name="keywords"
+          content="fiatsend, offramp, cashout, convert, exchange, blockchain"
+        />
+        <meta name="author" content="Fiatsend Team" />
+        <meta property="og:image" content="/images/fiatsend.png" />
+        <link rel="icon" href="/images/fiatsend.png" />
         <Script
           src="https://cdn.markfi.xyz/scripts/analytics/0.11.21/cookie3.analytics.min.js"
           integrity="sha384-wtYmYhbRlAqGwxc5Vb9GZVyp/Op3blmJICmXjRiJu2/TlPze5dHsmg2gglbH8viT"
