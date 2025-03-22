@@ -9,7 +9,7 @@ const NeedGas: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState(address);
 
   const handleRequestGas = () => {
-    const tweetText = `I am requesting 0.01 ETH @fiatsend offramp.fiatsend.com on @lisk Sepolia chain. My address: ${address}`;
+    const tweetText = `I am requesting extra 0.002 ETH on @fiatsend offramp.fiatsend.com on @LiskHQ Sepolia chain. My address: ${address}`;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
       tweetText
     )}`;
@@ -27,7 +27,7 @@ const NeedGas: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Need Gas?</h2>
+          <h2 className="text-xl font-bold text-gray-900">Need More Gas?</h2>
           <p className="text-sm text-gray-600 mt-1">
             Get testnet ETH to pay for transaction fees
           </p>
@@ -78,7 +78,7 @@ const NeedGas: React.FC = () => {
             onClick={() => setIsRequesting(!isRequesting)}
             className="w-full px-4 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
           >
-            Request ETH
+            Request Extra ETH
           </button>
         </div>
       </div>
