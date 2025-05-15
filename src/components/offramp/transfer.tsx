@@ -21,7 +21,7 @@ import { ClockIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { TransactionHistory } from "./TransactionHistory";
 import { SettingsModal } from "./SettingsModal";
 import { TransactionDetails } from "./TransactionDetails";
-import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
+import { withChainEnforcement, WithChainEnforcementProps } from "@/hocs/with-chain-enforcement";
 
 interface Token {
   symbol: string;
@@ -33,7 +33,7 @@ interface Token {
 }
 
 const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
-const USDT_ADDRESS = "0xAE134a846a92CA8E7803Ca075A1a0EE854Cd6168";
+const USDT_ADDRESS = "0xAE134a846a92CA8E7803CA075A1a0EE854Cd6168";
 
 const stablecoins: Token[] = [
   {
@@ -51,7 +51,7 @@ interface TransferProps {
   handleAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-const TransferBase: React.FC<TransferProps> = ({ exchangeRate, reserve, handleAction }) => {
+const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exchangeRate, reserve, handleAction }) => {
   const [ghsAmount, setGhsAmount] = useState("");
   const [usdtAmount, setUsdtAmount] = useState("");
   const [usdtAllowance, setUSDTAllowance] = useState<bigint>(BigInt(0));

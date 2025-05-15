@@ -13,11 +13,11 @@ const NFT_CONTRACT_ADDRESS = "0x063EC4E9d7C55A572d3f24d600e1970df75e84cA";
 const MAX_TRANSFER_AMOUNT = 25000;
 
 interface NFTTransferProps {
-  isCorrectChain?: boolean;
-  handleAction?: (action: () => Promise<void>) => Promise<void>;
+  isCorrectChain: boolean;
+  handleAction: (action: () => Promise<void>) => Promise<void>;
 }
 
-const NFTTransferBase: React.FC<NFTTransferProps> = ({ handleAction }) => {
+const NFTTransferBase: React.FC<NFTTransferProps> = ({ isCorrectChain, handleAction }) => {
   const [recipientNumber, setRecipientNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -93,11 +93,6 @@ const NFTTransferBase: React.FC<NFTTransferProps> = ({ handleAction }) => {
   const confirmTransfer = async () => {
     if (!recipientAddress) {
       toast.error("Could not resolve recipient address");
-      return;
-    }
-
-    if (!handleAction) {
-      toast.error("Chain enforcement not available");
       return;
     }
 
@@ -263,5 +258,4 @@ const NFTTransferBase: React.FC<NFTTransferProps> = ({ handleAction }) => {
   );
 };
 
-export const NFTTransfer = withChainEnforcement(NFTTransferBase);
-export default NFTTransfer;
+export default withChainEnforcement(NFTTransferBase);

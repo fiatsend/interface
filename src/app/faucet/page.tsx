@@ -9,12 +9,9 @@ import NeedGas from "@/components/need-gas";
 import Turnstile from "react-turnstile";
 import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
-interface FaucetProps {
-  isCorrectChain: boolean;
-  handleAction: (action: () => Promise<void>) => Promise<void>;
-}
+interface FaucetBaseProps {}
 
-const FaucetBase: React.FC<FaucetProps> = ({ isCorrectChain, handleAction }) => {
+const FaucetBase: React.FC<FaucetBaseProps & { isCorrectChain: boolean; handleAction: (action: () => Promise<void>) => Promise<void> }> = ({ isCorrectChain, handleAction }) => {
   const { isClaimLoading, canClaim, timeRemaining, formattedTime } =
     useTokenFaucet({ isCorrectChain, handleAction });
   const { isConnected } = useAccount();

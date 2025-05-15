@@ -7,7 +7,7 @@ import TetherTokenABI from "@/abis/TetherToken.json";
 import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
-const USDT_ADDRESS = "0xAE134a846a92CA8E7803Ca075A1a0EE854Cd6168";
+const USDT_ADDRESS = "0xAE134a846a92CA8E7803CA075A1a0EE854Cd6168";
 
 interface SendFiatProps {
   remainingLimit: number;
@@ -115,7 +115,11 @@ const SendFiatBase: React.FC<SendFiatProps> = ({ remainingLimit, handleAction })
     }
   };
 
-  // ... rest of the component code ...
+  return (
+    <div>
+      {/* Add your JSX here */}
+    </div>
+  );
 };
 
 export const SendFiat = withChainEnforcement(SendFiatBase);
