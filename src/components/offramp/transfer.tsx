@@ -21,6 +21,7 @@ import { ClockIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { TransactionHistory } from "./TransactionHistory";
 import { SettingsModal } from "./SettingsModal";
 import { TransactionDetails } from "./TransactionDetails";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 interface Token {
   symbol: string;
@@ -44,11 +45,13 @@ const stablecoins: Token[] = [
 ];
 
 interface TransferProps {
-  exchangeRate: number; // Specify the type of exchangeRate
+  exchangeRate: number;
   reserve: number;
+  isCorrectChain?: boolean;
+  handleAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
+const TransferBase: React.FC<TransferProps> = ({ exchangeRate, reserve, handleAction }) => {
   const [ghsAmount, setGhsAmount] = useState("");
   const [usdtAmount, setUsdtAmount] = useState("");
   const [usdtAllowance, setUSDTAllowance] = useState<bigint>(BigInt(0));
@@ -142,20 +145,27 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
       return;
     }
 
-    try {
-      setTransactionStatus("approving");
-      toast.loading("Waiting for approval...", { id: "approve" });
-
-      await setApproval({
-        address: USDT_ADDRESS,
-        abi: TetherTokenABI.abi,
-        functionName: "approve",
-        args: [FIATSEND_ADDRESS, amount],
-      });
-    } catch (error: any) {
-      handleTransactionError(error, "approve");
-      setTransactionStatus("idle");
+    if (!handleAction) {
+      toast.error("Chain enforcement not available");
+      return;
     }
+
+    await handleAction(async () => {
+      try {
+        setTransactionStatus("approving");
+        toast.loading("Waiting for approval...", { id: "approve" });
+
+        await setApproval({
+          address: USDT_ADDRESS,
+          abi: TetherTokenABI.abi,
+          functionName: "approve",
+          args: [FIATSEND_ADDRESS, amount],
+        });
+      } catch (error: any) {
+        handleTransactionError(error, "approve");
+        setTransactionStatus("idle");
+      }
+    });
   };
 
   const handleSendFiat = async () => {
@@ -164,40 +174,47 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
       return;
     }
 
-    try {
-      setTransactionStatus("converting");
-      toast.loading("Converting USDT to GHS...", { id: "convert" });
-
-      // Add validation for amount
-      if (!usdtAmount || Number(usdtAmount) <= 0) {
-        toast.error("Please enter a valid amount", { id: "convert" });
-        return;
-      }
-
-      // Add validation for liquidity
-      if (Number(ghsAmount) > reserve) {
-        toast.error("Insufficient liquidity", { id: "convert" });
-        return;
-      }
-
-      const tx = await swapTokens({
-        address: FIATSEND_ADDRESS,
-        abi: FiatSendABI.abi,
-        functionName: "offRamp",
-        args: [parseUnits(usdtAmount, 18)],
-      });
-
-      if (!tx) {
-        throw new Error("Transaction failed");
-      }
-
-      setTxHash("0x123..."); // Replace with actual tx hash
-      setShowStatus(true);
-    } catch (error: any) {
-      console.error("Swap error:", error);
-      handleTransactionError(error, "convert");
-      setTransactionStatus("idle");
+    if (!handleAction) {
+      toast.error("Chain enforcement not available");
+      return;
     }
+
+    await handleAction(async () => {
+      try {
+        setTransactionStatus("converting");
+        toast.loading("Converting USDT to GHS...", { id: "convert" });
+
+        // Add validation for amount
+        if (!usdtAmount || Number(usdtAmount) <= 0) {
+          toast.error("Please enter a valid amount", { id: "convert" });
+          return;
+        }
+
+        // Add validation for liquidity
+        if (Number(ghsAmount) > reserve) {
+          toast.error("Insufficient liquidity", { id: "convert" });
+          return;
+        }
+
+        const tx = await swapTokens({
+          address: FIATSEND_ADDRESS,
+          abi: FiatSendABI.abi,
+          functionName: "offRamp",
+          args: [parseUnits(usdtAmount, 18)],
+        });
+
+        if (!tx) {
+          throw new Error("Transaction failed");
+        }
+
+        setTxHash("0x123..."); // Replace with actual tx hash
+        setShowStatus(true);
+      } catch (error: any) {
+        console.error("Swap error:", error);
+        handleTransactionError(error, "convert");
+        setTransactionStatus("idle");
+      }
+    });
   };
 
   useEffect(() => {
@@ -572,4 +589,5 @@ const Transfer: React.FC<TransferProps> = ({ exchangeRate, reserve }) => {
   );
 };
 
+export const Transfer = withChainEnforcement(TransferBase);
 export default Transfer;

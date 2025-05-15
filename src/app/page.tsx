@@ -11,7 +11,7 @@ import FiatSendABI from "@/abis/FiatSend.json";
 import { useReadContract } from "wagmi";
 import GHSFIATABI from "@/abis/GHSFIAT.json";
 import Link from "next/link";
-import { NFTTransfer } from "@/components/offramp/NFTTransfer";
+import NFTTransfer from "@/components/offramp/NFTTransfer";
 import { AgentWithdraw } from "@/components/offramp/AgentWithdraw";
 
 const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";

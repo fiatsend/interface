@@ -9,17 +9,21 @@ import {
   useSimulateContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 interface OnboardingCompleteProps {
   onContinue: () => void;
   mobileNumber: string;
+  isCorrectChain: boolean;
+  handleAction: (action: () => Promise<void>) => Promise<void>;
 }
 
 const NFTContract = "0x063EC4E9d7C55A572d3f24d600e1970df75e84cA";
 
-export const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({
+const OnboardingCompleteBase: React.FC<OnboardingCompleteProps> = ({
   onContinue,
   mobileNumber,
+  handleAction,
 }) => {
   // const [nftMinted, setNftMinted] = useState(false);
   const { address } = useAccount();
@@ -54,19 +58,21 @@ export const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({
       return;
     }
 
-    try {
-      mint({
-        address: NFTContract,
-        abi: MomoNFTABI.abi,
-        functionName: "registerMobile",
-        args: [
-          mobileNumber,
-          "https://teal-improved-leech-539.mypinata.cloud/ipfs/bafybeicgeixpawvoztmgdcgyidadg74bxz3nyr4fiiz6cmkh3e7qbxjlkq",
-        ],
-      });
-    } catch (error: any) {
-      handleError(error);
-    }
+    await handleAction(async () => {
+      try {
+        await mint({
+          address: NFTContract,
+          abi: MomoNFTABI.abi,
+          functionName: "registerMobile",
+          args: [
+            mobileNumber,
+            "https://teal-improved-leech-539.mypinata.cloud/ipfs/bafybeicgeixpawvoztmgdcgyidadg74bxz3nyr4fiiz6cmkh3e7qbxjlkq",
+          ],
+        });
+      } catch (error: any) {
+        handleError(error);
+      }
+    });
   };
 
   useEffect(() => {
@@ -240,3 +246,5 @@ export const OnboardingComplete: React.FC<OnboardingCompleteProps> = ({
     </div>
   );
 };
+
+export const OnboardingComplete = withChainEnforcement(OnboardingCompleteBase);

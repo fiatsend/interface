@@ -3,68 +3,32 @@
 import React, { useEffect, useState } from "react";
 import { useTokenFaucet } from "@/hooks/use-token-faucet";
 import { toast } from "react-hot-toast";
-import { useAccount, useSwitchChain } from "wagmi";
-import { liskSepolia } from "viem/chains";
+import { useAccount } from "wagmi";
 import { formatDistanceToNow } from "date-fns";
 import { usePrivy } from "@privy-io/react-auth";
 import NeedGas from "@/components/need-gas";
-import Turnstile from "react-turnstile"; // Import Turnstile component
+import Turnstile from "react-turnstile";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
-const Faucet = () => {
+interface FaucetProps {
+  isCorrectChain: boolean;
+  handleAction: (action: () => Promise<void>) => Promise<void>;
+}
+
+const FaucetBase: React.FC<FaucetProps> = ({ isCorrectChain, handleAction }) => {
   const { isClaimLoading, canClaim, timeRemaining, formattedTime } =
-    useTokenFaucet();
-  const { chain } = useAccount();
-  const { switchChain } = useSwitchChain();
-  const [hasSwitchedChain, setHasSwitchedChain] = useState(false);
+    useTokenFaucet({ isCorrectChain, handleAction });
   const { isConnected } = useAccount();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null); // Store Turnstile token
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { login, user } = usePrivy();
 
   const userAddress = user?.wallet?.address;
-
-  useEffect(() => {
-    if (chain && chain.id !== liskSepolia.id) {
-      toast.error(
-        <div className="flex flex-col gap-2">
-          <span>Please switch to Lisk Sepolia network</span>
-          <button
-            onClick={async () => {
-              try {
-                await switchChain({ chainId: liskSepolia.id });
-                setHasSwitchedChain(true);
-              } catch (error) {
-                console.error("Failed to switch chain:", error);
-                toast.error("Failed to switch to Lisk Sepolia network");
-              }
-            }}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm"
-          >
-            Switch Network
-          </button>
-        </div>,
-        {
-          duration: 5000,
-          position: "top-center",
-        }
-      );
-    }
-  }, [chain, switchChain, hasSwitchedChain]);
-
-  const formatTimeRemaining = (ms: number) => {
-    const futureDate = new Date(Date.now() + ms);
-    return formatDistanceToNow(futureDate, { addSuffix: true });
-  };
 
   const handleClaim = async () => {
     try {
       if (!captchaToken) {
         toast.error("Please complete the CAPTCHA before claiming tokens.");
-        return;
-      }
-
-      if (chain?.id !== liskSepolia.id && !hasSwitchedChain) {
-        await switchChain({ chainId: liskSepolia.id });
         return;
       }
 
@@ -84,7 +48,7 @@ const Faucet = () => {
           },
           body: JSON.stringify({
             user: userAddress,
-            captchaToken, // Send CAPTCHA token to server
+            captchaToken,
           }),
         }
       );
@@ -138,8 +102,6 @@ const Faucet = () => {
           <div className="p-8">
             {/* Claim Section */}
             <div className="space-y-6">
-              {/* Turnstile Widget */}
-
               {isConnected ? (
                 <div className="flex flex-col items-center">
                   {canClaim && !timeRemaining && (
@@ -227,4 +189,4 @@ const Faucet = () => {
   );
 };
 
-export default Faucet;
+export default withChainEnforcement(FaucetBase);

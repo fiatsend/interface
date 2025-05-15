@@ -9,13 +9,19 @@ import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
 import { usePrivy } from "@privy-io/react-auth";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 const FAUCET_CONTRACT_ADDRESS =
   "0x811468d8b88a8eee5C396B2A2Cb3b4Aa06295Bc8" as Address;
 
 const COOLDOWN_TIME = 86400; // 24 hours in seconds
 
-export function useTokenFaucet() {
+interface UseTokenFaucetProps {
+  isCorrectChain: boolean;
+  handleAction: (action: () => Promise<void>) => Promise<void>;
+}
+
+export function useTokenFaucet({ handleAction }: UseTokenFaucetProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [formattedTime, setFormattedTime] = useState<string>("");
@@ -70,16 +76,18 @@ export function useTokenFaucet() {
   const { writeContract, isPending, error } = useWriteContract();
 
   const claimTokens = async () => {
-    try {
-      await writeContract({
-        address: FAUCET_CONTRACT_ADDRESS,
-        abi: TokenFaucetABI.abi as Abi,
-        functionName: "requestTokens",
-      });
-    } catch (err) {
-      console.error("Failed to claim tokens:", err);
-      toast.error("Failed to claim tokens. Please try again.");
-    }
+    await handleAction(async () => {
+      try {
+        await writeContract({
+          address: FAUCET_CONTRACT_ADDRESS,
+          abi: TokenFaucetABI.abi as Abi,
+          functionName: "requestTokens",
+        });
+      } catch (err) {
+        console.error("Failed to claim tokens:", err);
+        toast.error("Failed to claim tokens. Please try again.");
+      }
+    });
   };
 
   // Watch for successful claims

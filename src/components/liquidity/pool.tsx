@@ -11,6 +11,7 @@ import FiatSendABI from "@/abis/FiatSend.json";
 import toast from "react-hot-toast";
 import GHSFIATABI from "@/abis/GHSFIAT.json";
 import withFiatsendNFT from "@/hocs/with-account";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 interface Token {
   symbol: string;
@@ -36,7 +37,12 @@ const ERC20_ABI = [
   },
 ] as const;
 
-const Pool = () => {
+interface PoolProps {
+  isCorrectChain: boolean;
+  handleAction: (action: () => Promise<void>) => Promise<void>;
+}
+
+const PoolBase: React.FC<PoolProps> = ({ handleAction }) => {
   const [activeTab, setActiveTab] = useState<"add" | "remove">("add");
   const [isAutomaticRange, setIsAutomaticRange] = useState(true);
   const [currentAllowance, setCurrentAllowance] = useState("");
@@ -182,11 +188,17 @@ const Pool = () => {
   };
 
   const handleApproveAllowance = async () => {
-    writeContract({
-      address: GHSFIAT_ADDRESS,
-      abi: GHSFIATABI.abi,
-      functionName: "approve",
-      args: [FIATSEND_ADDRESS, parseUnits(amount, 18)],
+    await handleAction(async () => {
+      try {
+        await writeContract({
+          address: GHSFIAT_ADDRESS,
+          abi: GHSFIATABI.abi,
+          functionName: "approve",
+          args: [FIATSEND_ADDRESS, parseUnits(amount, 18)],
+        });
+      } catch (error: any) {
+        handleTransactionError(error);
+      }
     });
   };
 
@@ -196,20 +208,22 @@ const Pool = () => {
       return;
     }
 
-    const toastId = toast.loading("Approving GHSFIAT...");
-    const parsedGHSFIATAmount = parseUnits(amount, 18);
+    await handleAction(async () => {
+      const toastId = toast.loading("Approving GHSFIAT...");
+      const parsedGHSFIATAmount = parseUnits(amount, 18);
 
-    try {
-      // Proceed with the transaction
-      writeContract({
-        address: FIATSEND_ADDRESS,
-        abi: FiatSendABI.abi,
-        functionName: "supplyGHSFIAT",
-        args: [parsedGHSFIATAmount],
-      });
-    } catch (error: any) {
-      handleTransactionError(error, toastId);
-    }
+      try {
+        // Proceed with the transaction
+        await writeContract({
+          address: FIATSEND_ADDRESS,
+          abi: FiatSendABI.abi,
+          functionName: "supplyGHSFIAT",
+          args: [parsedGHSFIATAmount],
+        });
+      } catch (error: any) {
+        handleTransactionError(error, toastId);
+      }
+    });
   };
 
   const handleTransactionError = (error: any, toastId: string) => {
@@ -533,4 +547,4 @@ const Pool = () => {
   );
 };
 
-export default withFiatsendNFT(Pool);
+export const Pool = withChainEnforcement(PoolBase);

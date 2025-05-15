@@ -6,12 +6,18 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { formatUnits, parseUnits } from "viem";
 import GHSFIATABI from "@/abis/GHSFIAT.json";
 import MomoNFTABI from "@/abis/MomoNFT.json";
+import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
 const GHSFIAT_ADDRESS = "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A";
 const NFT_CONTRACT_ADDRESS = "0x063EC4E9d7C55A572d3f24d600e1970df75e84cA";
 const MAX_TRANSFER_AMOUNT = 25000;
 
-export const NFTTransfer = () => {
+interface NFTTransferProps {
+  isCorrectChain?: boolean;
+  handleAction?: (action: () => Promise<void>) => Promise<void>;
+}
+
+const NFTTransferBase: React.FC<NFTTransferProps> = ({ handleAction }) => {
   const [recipientNumber, setRecipientNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -90,25 +96,32 @@ export const NFTTransfer = () => {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const parsedAmount = parseUnits(amount, 18);
-      await transfer({
-        address: GHSFIAT_ADDRESS,
-        abi: GHSFIATABI.abi,
-        functionName: "transfer",
-        args: [recipientAddress, parsedAmount],
-      });
-      toast.success("Transfer successful!");
-      setShowConfirmation(false);
-      setAmount("");
-      setRecipientNumber("");
-    } catch (error) {
-      console.error("Transfer failed:", error);
-      toast.error("Transfer failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (!handleAction) {
+      toast.error("Chain enforcement not available");
+      return;
     }
+
+    await handleAction(async () => {
+      setIsLoading(true);
+      try {
+        const parsedAmount = parseUnits(amount, 18);
+        await transfer({
+          address: GHSFIAT_ADDRESS,
+          abi: GHSFIATABI.abi,
+          functionName: "transfer",
+          args: [recipientAddress, parsedAmount],
+        });
+        toast.success("Transfer successful!");
+        setShowConfirmation(false);
+        setAmount("");
+        setRecipientNumber("");
+      } catch (error) {
+        console.error("Transfer failed:", error);
+        toast.error("Transfer failed. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    });
   };
 
   return (
@@ -249,3 +262,6 @@ export const NFTTransfer = () => {
     </div>
   );
 };
+
+export const NFTTransfer = withChainEnforcement(NFTTransferBase);
+export default NFTTransfer;
