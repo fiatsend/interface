@@ -186,6 +186,4 @@ const FaucetBase: React.FC<FaucetProps> = ({ isCorrectChain, handleAction }) => 
       </div>
     </div>
   );
-};
-
-export default withChainEnforcement(FaucetBase);
+};export default withChainEnforcement(FaucetBase);
