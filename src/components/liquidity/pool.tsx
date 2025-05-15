@@ -197,7 +197,7 @@ const PoolBase: React.FC<PoolProps> = ({ handleAction }) => {
           args: [FIATSEND_ADDRESS, parseUnits(amount, 18)],
         });
       } catch (error: any) {
-        handleTransactionError(error);
+        handleTransactionError(error, "approve");
       }
     });
   };
@@ -547,4 +547,4 @@ const PoolBase: React.FC<PoolProps> = ({ handleAction }) => {
   );
 };
 
-export const Pool = withChainEnforcement(PoolBase);
+export default withChainEnforcement(PoolBase);
