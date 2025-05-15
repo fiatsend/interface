@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useTokenFaucet } from "@/hooks/use-token-faucet";
 import { toast } from "react-hot-toast";
 import { useAccount } from "wagmi";
-import { formatDistanceToNow } from "date-fns";
 import { usePrivy } from "@privy-io/react-auth";
 import NeedGas from "@/components/need-gas";
 import Turnstile from "react-turnstile";
