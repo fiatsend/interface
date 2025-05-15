@@ -17,7 +17,7 @@ const KYC_LIMITS = {
   1: 100, // Level 1: $100
   2: 1000, // Level 2: $1,000
   3: 10000, // Level 3: $10,000
-  4: 100000, // Level 4: $100,000
+  4: 250000, // Level 4: $100,000
 };
 
 export const KYCCheck: React.FC<KYCCheckProps> = ({
