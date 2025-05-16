@@ -13,8 +13,9 @@ import GHSFIATABI from "@/abis/GHSFIAT.json";
 import Link from "next/link";
 import NFTTransfer from "@/components/offramp/NFTTransfer";
 import { AgentWithdraw } from "@/components/offramp/AgentWithdraw";
+import { motion, AnimatePresence } from "framer-motion";
 
-const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
+const FIATSEND_ADDRESS = "0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d";
 const GHSFIAT_ADDRESS = "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A";
 
 const OfframpPage: React.FC = () => {
@@ -63,88 +64,137 @@ const OfframpPage: React.FC = () => {
   }, [exRates, exRatesError, reservesData, reservesError]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
       {/* Stats Banner */}
-      <div className="bg-white border-b border-gray-200">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white border-b border-gray-200 shadow-sm"
+      >
         <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Protocol Reserves Card */}
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-purple-100"
+            >
               <h2 className="text-sm font-medium text-gray-600 mb-1">
                 Protocol Reserves
               </h2>
-              <p className="text-xl sm:text-2xl font-bold text-purple-600">
+              <p className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 {fiatsendReserves.toLocaleString()} GHSFIAT
               </p>
               <Link
-                href="https://sepolia-blockscout.lisk.com/address/0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD"
+                href="https://sepolia-blockscout.lisk.com/address/0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d"
                 target="_blank"
-                className="text-sm text-purple-500 hover:text-purple-600 mt-2 inline-flex items-center space-x-1"
+                className="text-sm text-purple-500 hover:text-purple-600 mt-2 inline-flex items-center space-x-1 group"
               >
                 <span>View Contract</span>
-                <span>→</span>
+                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
               </Link>
-            </div>
+            </motion.div>
             {/* Exchange Rate Card */}
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-purple-100"
+            >
               <h2 className="text-sm font-medium text-gray-600 mb-1">
                 Exchange Rate
               </h2>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 1 USDT = {exchangeRate} GHS
               </p>
               <p className="text-sm text-gray-500 mt-2">Updated in real-time</p>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-8 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="max-w-7xl mx-auto px-4 py-4 sm:py-8 sm:px-6 lg:px-8"
+        >
           <div className="bg-white rounded-xl shadow-sm p-1 mb-8 flex overflow-x-auto">
             <button
               onClick={() => setActiveTab("send")}
-              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+              className={`flex-1 py-2 px-4 rounded-lg transition-all relative ${
                 activeTab === "send"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-600 hover:text-purple-600"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                  : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
               }`}
             >
               Exchange
+              {activeTab === "send" && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </button>
             <button
               onClick={() => setActiveTab("nft-transfer")}
-              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+              className={`flex-1 py-2 px-4 rounded-lg transition-all relative ${
                 activeTab === "nft-transfer"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-600 hover:text-purple-600"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                  : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
               }`}
             >
               Transfer
+              {activeTab === "nft-transfer" && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </button>
             <button
               onClick={() => setActiveTab("agent")}
-              className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+              className={`flex-1 py-2 px-4 rounded-lg transition-all relative ${
                 activeTab === "agent"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-600 hover:text-purple-600"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                  : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
               }`}
             >
               Withdraw
+              {activeTab === "agent" && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Active Component */}
-        <div className="transition-all duration-300">
-          {activeTab === "send" && (
-            <Transfer reserve={fiatsendReserves} exchangeRate={exchangeRate} />
-          )}
-          {activeTab === "nft-transfer" && <NFTTransfer />}
-          {activeTab === "agent" && <AgentWithdraw />}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="transition-all duration-300"
+          >
+            {activeTab === "send" && (
+              <Transfer reserve={fiatsendReserves} exchangeRate={exchangeRate} />
+            )}
+            {activeTab === "nft-transfer" && <NFTTransfer />}
+            {activeTab === "agent" && <AgentWithdraw />}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

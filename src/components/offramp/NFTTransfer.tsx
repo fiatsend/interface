@@ -7,6 +7,8 @@ import { formatUnits, parseUnits } from "viem";
 import GHSFIATABI from "@/abis/GHSFIAT.json";
 import MomoNFTABI from "@/abis/MomoNFT.json";
 import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
+import Image from "next/image";
+import { Country } from "@/components/onboarding/CountrySelection";
 
 const GHSFIAT_ADDRESS = "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A";
 const NFT_CONTRACT_ADDRESS = "0x063EC4E9d7C55A572d3f24d600e1970df75e84cA";
@@ -19,20 +21,34 @@ interface NFTTransferProps {
 
 const NFTTransferBase: React.FC<NFTTransferProps> = ({ isCorrectChain, handleAction }) => {
   const [recipientNumber, setRecipientNumber] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>({
+    code: "+233",
+    name: "Ghana",
+    flag: "/images/flags/ghana.png"
+  });
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const { address } = useAccount();
 
+  const countries: Country[] = [
+    { code: "+233", name: "Ghana", flag: "/images/flags/ghana.png" },
+    { code: "+254", name: "Kenya", flag: "/images/flags/kenya.png" },
+    { code: "+255", name: "Tanzania", flag: "/images/flags/tanzania.png" },
+    { code: "+256", name: "Uganda", flag: "/images/flags/uganda.png" },
+  ];
+
   // Check if recipient has Fiatsend NFT
-  const hasNFT = useCheckNFTByMobile(recipientNumber);
+  const fullNumber = selectedCountry ? `${selectedCountry.code}${recipientNumber.replace(/^0+/, "")}` : recipientNumber;
+  const hasNFT = useCheckNFTByMobile(fullNumber);
 
   // Get recipient's wallet address
   const { data: recipientAddress } = useReadContract({
     address: NFT_CONTRACT_ADDRESS,
     abi: MomoNFTABI.abi,
     functionName: "getWalletByMobile",
-    args: [recipientNumber],
+    args: [fullNumber],
   });
 
   // Check user's GHSFIAT balance
@@ -52,7 +68,9 @@ const NFTTransferBase: React.FC<NFTTransferProps> = ({ isCorrectChain, handleAct
   const isSelfTransfer = address?.toLowerCase() === (recipientAddress as string)?.toLowerCase();
 
   const validatePhoneNumber = (number: string) => {
-    const phoneNumberObj = parsePhoneNumberFromString(number);
+    if (!selectedCountry) return false;
+    const fullNumber = selectedCountry.code + number.replace(/^0+/, "");
+    const phoneNumberObj = parsePhoneNumberFromString(fullNumber);
     return phoneNumberObj?.isValid() || false;
   };
 
@@ -161,17 +179,100 @@ const NFTTransferBase: React.FC<NFTTransferProps> = ({ isCorrectChain, handleAct
           Recipient Number
         </label>
         <div className="relative">
-          <input
-            type="tel"
-            value={recipientNumber}
-            onChange={(e) => setRecipientNumber(e.target.value)}
-            placeholder="Enter recipient's phone number"
-            className={`w-full px-4 py-3 rounded-lg border-2 transition-colors ${
-              recipientNumber && !validatePhoneNumber(recipientNumber)
-                ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                : "border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-            }`}
-          />
+          {/* Country Selector */}
+          <div className="relative mb-2">
+            <button
+              onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+              className="flex items-center justify-between w-full p-3 border rounded-lg bg-white shadow-sm hover:border-purple-500 transition-colors"
+            >
+              <div className="flex items-center">
+                {selectedCountry && (
+                  <>
+                    <Image
+                      width={25}
+                      height={25}
+                      src={selectedCountry.flag}
+                      alt={selectedCountry.name}
+                      className="w-6 h-6 mr-2"
+                    />
+                    <span className="text-gray-700">
+                      {selectedCountry.name} ({selectedCountry.code})
+                    </span>
+                  </>
+                )}
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-400 transition-transform ${
+                  isCountryDropdownOpen ? "transform rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isCountryDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg">
+                {countries.map((country) => (
+                  <button
+                    key={country.code}
+                    onClick={() => {
+                      setSelectedCountry(country);
+                      setIsCountryDropdownOpen(false);
+                    }}
+                    className="flex items-center w-full p-3 hover:bg-gray-50"
+                  >
+                    <Image
+                      width={25}
+                      height={25}
+                      src={country.flag}
+                      alt={country.name}
+                      className="w-6 h-6 mr-2"
+                    />
+                    <span className="text-gray-700">
+                      {country.name} ({country.code})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Phone Number Input */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <input
+              type="tel"
+              value={recipientNumber}
+              onChange={(e) => setRecipientNumber(e.target.value)}
+              placeholder="Enter recipient's phone number"
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 transition-colors ${
+                recipientNumber && !validatePhoneNumber(recipientNumber)
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                  : "border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+              }`}
+            />
+          </div>
         </div>
         {recipientNumber && (
           <div className="mt-1">
@@ -233,7 +334,7 @@ const NFTTransferBase: React.FC<NFTTransferProps> = ({ isCorrectChain, handleAct
                 <span className="font-semibold">{Number(amount).toLocaleString()} GHS</span>
               </p>
               <p className="text-gray-600">
-                To: <span className="font-semibold">{recipientNumber}</span>
+                To: <span className="font-semibold">{fullNumber}</span>
               </p>
             </div>
             <div className="flex space-x-3">

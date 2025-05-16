@@ -1,8 +1,17 @@
 import webpack from 'webpack';
+import withPWA from 'next-pwa';
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    reactStrictMode: true,
+const isProd = process.env.NODE_ENV === 'production';
+
+const nextConfig = withPWA({
+    pwa: {
+        dest: 'public',
+        disable: !isProd,
+        register: true,
+        skipWaiting: true,
+        manifest: '/manifest.json',
+        themeColor: '#5D15F2',
+    },
 
     webpack: (config, { isServer }) => {
         if (!isServer) {
@@ -29,6 +38,9 @@ const nextConfig = {
         }
         return config;
     },
-};
+});
 
-export default nextConfig;
+export default {
+    ...nextConfig,
+    reactStrictMode: true,
+};
