@@ -37,7 +37,7 @@
     "keccak": "^3.0.4",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
-    "next": "^14.2.5",
+    "next": "^14.2.25",
     "next-auth": "^4.24.7",
     "permissionless": "^0.2.36",
     "qrcode.react": "^4.1.0",
@@ -66,5 +66,11 @@
     "tailwindcss": "^3.4.10",
     "typescript": "^5",
     "webpack": "^5.94.0"
-  }
+  },
+  "resolutions": {
+  "elliptic": "^6.6.1"
+},
+"overrides": {
+  "base-x": "^4.0.1"
+}
 }

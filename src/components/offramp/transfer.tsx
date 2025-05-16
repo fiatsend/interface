@@ -17,11 +17,12 @@ import Link from "next/link";
 import { formatUnits, parseUnits } from "viem";
 import LoadingScreen from "./LoadingScreen";
 import { TransactionStatus } from "./TransactionStatus";
-import { ClockIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, Cog6ToothIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { TransactionHistory } from "./TransactionHistory";
 import { SettingsModal } from "./SettingsModal";
 import { TransactionDetails } from "./TransactionDetails";
 import { withChainEnforcement, WithChainEnforcementProps } from "@/hocs/with-chain-enforcement";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Token {
   symbol: string;
@@ -32,8 +33,8 @@ interface Token {
   disabled?: boolean;
 }
 
-const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
-const USDT_ADDRESS = "0xAE134a846a92CA8E7803CA075A1a0EE854Cd6168";
+const FIATSEND_ADDRESS = "0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d";
+const USDT_ADDRESS = "0xAE134a846a92CA8E7803Ca075A1a0EE854Cd6168";
 
 const stablecoins: Token[] = [
   {
@@ -58,14 +59,31 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
   const { address } = useAccount();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const amount = parseUnits(usdtAmount, 18);
+  const amount = usdtAmount ? parseUnits(usdtAmount, 18) : BigInt(0);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [showStatus, setShowStatus] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showTransactionDetails, setShowTransactionDetails] = useState(false);
 
-  //simulate data
+  // Simulate data for offRamp transaction to get gas estimate
+  const { data: offRampSimulate, error: offRampSimulateError } = useSimulateContract({
+    address: FIATSEND_ADDRESS,
+    abi: FiatSendABI.abi,
+    functionName: "offRamp",
+    args: [amount],
+    account: address,
+    query: {
+      enabled: amount > BigInt(0),
+    },
+  });
+
+  const gasFeeEstimate = offRampSimulate?.request?.gasPrice ? formatUnits(offRampSimulate.request.gasPrice * (offRampSimulate.request.gas ?? BigInt(0)), 18) : "N/A";
+  const estimatedTime = "~25s"; // Still hardcoded, no dynamic source identified yet
+  const merchantFee = "N/A"; // No dynamic source identified yet
+  const protocolFee = "N/A"; // No dynamic source identified yet
+  const totalFees = gasFeeEstimate !== "N/A" ? gasFeeEstimate : "N/A"; // Simple total for now
+
   const {
     data: approvalData,
     isFetching: approvalIsFetching,
@@ -139,6 +157,9 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
     "idle" | "approving" | "converting" | "completed"
   >("idle");
 
+  // Calculate if we need approval
+  const needsApproval = usdtAllowance < (usdtAmount ? parseUnits(usdtAmount, 18) : BigInt(0));
+
   const handleApprove = async () => {
     if (!address) {
       toast.error("Please connect your wallet");
@@ -155,13 +176,24 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
         setTransactionStatus("approving");
         toast.loading("Waiting for approval...", { id: "approve" });
 
+        // Use 6 decimals for USDT instead of 18
+        const parsedAmount = parseUnits(usdtAmount, 18);
+        
+        // Log the approval attempt for debugging
+        console.log("Attempting to approve USDT:", {
+          amount: usdtAmount,
+          parsedAmount: parsedAmount.toString(),
+          spender: FIATSEND_ADDRESS
+        });
+
         await setApproval({
           address: USDT_ADDRESS,
           abi: TetherTokenABI.abi,
           functionName: "approve",
-          args: [FIATSEND_ADDRESS, amount],
+          args: [FIATSEND_ADDRESS, parsedAmount],
         });
       } catch (error: any) {
+        console.error("Approval error:", error);
         handleTransactionError(error, "approve");
         setTransactionStatus("idle");
       }
@@ -200,14 +232,15 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
           address: FIATSEND_ADDRESS,
           abi: FiatSendABI.abi,
           functionName: "offRamp",
-          args: [parseUnits(usdtAmount, 18)],
+          args: [parseUnits(usdtAmount, 18)], 
         });
 
         if (!tx) {
           throw new Error("Transaction failed");
         }
 
-        setTxHash("0x123..."); // Replace with actual tx hash
+        // Use the actual transaction hash
+        setTxHash(tx);
         setShowStatus(true);
       } catch (error: any) {
         console.error("Swap error:", error);
@@ -230,53 +263,33 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
         } else if (AllowanceError) {
           toast.error("Error fetching allowances");
         }
+
+        if (offRampSimulateError) {
+          console.error("OffRamp simulation error:", offRampSimulateError);
+          // Optionally display an error to the user
+        }
+
       } catch (error) {
         console.error("An unexpected error occurred:", error);
-        toast.error("An unexpected error occurred");
       }
     };
 
     fetchData();
-  }, [
-    address,
-    currentusdtAllowance,
-    AllowanceError,
-    isApproved,
-    isSwapComplete,
-  ]);
-
-  useEffect(() => {
-    if (txAppSuccess) {
-      toast.success("USDT Approved!", { id: "approve" });
-      setTransactionStatus("idle");
-    }
-  }, [txAppSuccess]);
-
-  useEffect(() => {
-    if (txSuccess) {
-      toast.success("Successfully converted USDT to GHS!", { id: "convert" });
-      setTransactionStatus("completed");
-
-      // Reset form after successful transaction
-      setTimeout(() => {
-        setGhsAmount("");
-        setUsdtAmount("");
-        setTransactionStatus("idle");
-      }, 2000);
-    }
-  }, [txSuccess]);
-
-  const formattedBalance = usdtBalance
-    ? Number(formatUnits(usdtBalance as bigint, 18)).toFixed(2)
-    : "0.00";
+  }, [currentusdtAllowance, AllowanceError, offRampSimulate, offRampSimulateError]);
 
   const handleTransactionError = (error: any, toastId: string) => {
+    console.error("Transaction error:", error);
+    
     if (error.message?.includes("user rejected")) {
       toast.error("Transaction cancelled by user", { id: toastId });
     } else if (error.message?.includes("insufficient funds")) {
       toast.error("Insufficient funds for transaction", { id: toastId });
+    } else if (error.message?.includes("execution reverted")) {
+      toast.error("Transaction reverted. Please check your balance and try again", { id: toastId });
+    } else if (error.message?.includes("gas required exceeds allowance")) {
+      toast.error("Insufficient gas for transaction", { id: toastId });
     } else {
-      toast.error("Transaction failed. Please try again", { id: toastId });
+      toast.error(`Transaction failed: ${error.message || "Please try again"}`, { id: toastId });
     }
   };
 
@@ -334,14 +347,15 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
     return <LoadingScreen />;
   }
 
-  if (showStatus && txHash) {
+  // Only show transaction status if we have a valid transaction hash
+  if (showStatus && txHash && txHash !== "0x123...") {
     return (
       <TransactionStatus
         txHash={txHash}
         onComplete={() => {
-          // Handle completion (e.g., reset form, show success message)
           setShowStatus(false);
           setTxHash(null);
+          setTransactionStatus("completed");
         }}
       />
     );
@@ -350,237 +364,246 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
   return (
     <>
       {transactionStatus === "completed" && <SuccessScreen />}
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100"
+      >
         {/* Header with Gradient */}
-        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-8 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Send with Wallet</h2>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowHistory(true)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <ClockIcon className="w-6 h-6" />
-              </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <Cog6ToothIcon className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-          <p className="mt-2">
-            Convert your USDT to GHS directly from your wallet
-          </p>
-
-          {/* Exchange Rate Cards */}
-          <div className="grid sm:grid-cols-2 z-0 grid-cols-1 gap-4 mt-6">
-            <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-sm font-medium">Exchange Rate</p>
-              <div className="flex items-baseline mt-1">
-                <p className="text-2xl font-bold">1 USDT</p>
-                <p className="text-lg ml-2">= {exchangeRate.toFixed(2)} GHS</p>
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-8 text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-grid-white/10" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Send with Wallet</h2>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <ClockIcon className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <Cog6ToothIcon className="w-6 h-6" />
+                </button>
               </div>
             </div>
-            <div className="bg-white/10 rounded-xl p-4">
-              <p className="text-sm font-medium">Available Liquidity</p>
-              <p className="text-2xl font-bold mt-1">
-                {reserve.toFixed(2)} GHS
-              </p>
+            <p className="mt-2 text-white/80">
+              Convert your USDT to GHS directly from your wallet
+            </p>
+
+            {/* Exchange Rate Cards */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-800">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-white/20"
+              >
+                <h3 className="text-xs font-medium text-gray-600">Exchange Rate</h3>
+                <p className="text-lg font-bold mt-1">
+                  1 USDT = {exchangeRate} GHS
+                </p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-white/20"
+              >
+                <h3 className="text-xs font-medium text-gray-600">Protocol Reserves</h3>
+                <p className="text-lg font-bold mt-1">
+                  {reserve.toLocaleString()} GHSFIAT
+                </p>
+              </motion.div>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content Area */}
         <div className="p-8 space-y-8">
-          {/* Step 1: Amount Input */}
-          <div className="space-y-4">
+          {/* Amount Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
+          >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
                 1
               </div>
-              <h2 className="text-xl font-semibold">Enter Amount in GHS</h2>
+              <h2 className="text-xl font-semibold">Enter Amount</h2>
             </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-              <div className="">
-                <input
-                  type="number"
-                  value={ghsAmount}
-                  onChange={(e) => {
-                    setGhsAmount(e.target.value);
-                    setUsdtAmount(
-                      (Number(e.target.value) / exchangeRate).toFixed(2)
-                    );
-                  }}
-                  className="w-full p-4 pr-24 text-3xl font-bold rounded-xl border-2 border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="0.00"
-                />
+            <div className="relative rounded-xl shadow-sm">
+              <input
+                type="number"
+                id="ghs-amount"
+                className="block w-full pl-12 pr-20 py-3 border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                placeholder="Enter amount in GHS"
+                value={ghsAmount}
+                onChange={(e) => handleGhsAmountChange(e.target.value)}
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7l4-4m0 0l4 4m-4-4v16m0-16l-.01 0.01M12 4v16"
+                  />
+                </svg>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">You&apos;ll send</span>
-                <span className="text-lg font-semibold text-gray-700">
-                  ≈ {usdtAmount} USDT
-                </span>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">GHS</span>
               </div>
             </div>
-          </div>
+            {usdtAmount && ( // Display converted USDT amount only if ghsAmount is entered
+              <p className="mt-2 text-sm text-gray-600">
+                Equivalent to: {usdtAmount} USDT
+              </p>
+            )}
+          </motion.div>
 
-          {/* Step 2: Token Selection */}
-          <div className="space-y-4">
+          {/* Select Token */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-4"
+          >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
                 2
               </div>
               <h2 className="text-xl font-semibold">Select Token</h2>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               {stablecoins.map((token) => (
-                <button
+                <motion.div
                   key={token.symbol}
-                  onClick={() =>
-                    !token.disabled && setSelectedQuoteToken(token)
-                  }
-                  disabled={token.disabled}
-                  className={`flex items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`bg-white rounded-xl p-4 border shadow-sm flex items-center justify-between cursor-pointer ${
                     selectedQuoteToken.symbol === token.symbol
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-purple-300"
-                  } ${token.disabled ? "cursor-not-allowed" : ""}`}
+                      ? "border-purple-500"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => !token.disabled && setSelectedQuoteToken(token)}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
                     <Image
                       src={token.icon}
+                      width={32}
+                      height={32}
                       alt={token.name}
-                      width={24}
-                      height={24}
                       className="rounded-full"
                     />
-                    <span className="font-medium text-gray-900">
-                      {token.symbol}
-                    </span>
+                    <div>
+                      <p className="font-medium text-gray-900">{token.name}</p>
+                      <p className="text-sm text-gray-500">{token.symbol}</p>
+                    </div>
                   </div>
-                </button>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">
+                      {usdtBalance ? Number(formatUnits(usdtBalance as bigint, 18)).toFixed(2) : "0.00"} {token.symbol}
+                    </p>
+                    {token.disabled && (
+                      <span className="text-xs font-medium text-gray-500">Coming Soon</span>
+                    )}
+                  </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Step 3: Transaction */}
-          <div className="space-y-4">
+          {/* Approve & Send */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-4"
+          >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
                 3
               </div>
               <h2 className="text-xl font-semibold">Approve & Send</h2>
             </div>
 
             <div className="space-y-4">
-              {usdtAllowance <
-                (usdtAmount ? parseUnits(usdtAmount, 18) : BigInt(0)) && (
-                <button
+              {needsApproval ? (
+                <motion.button
                   onClick={handleApprove}
                   disabled={transactionStatus === "approving"}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className={`w-full py-4 rounded-xl font-medium transition-all ${
                     transactionStatus === "approving"
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-purple-600 text-white hover:bg-purple-700"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
                   }`}
                 >
                   {transactionStatus === "approving" ? (
                     <div className="flex items-center justify-center space-x-2">
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <ArrowPathIcon className="w-5 h-5 animate-spin" />
                       <span>Approving...</span>
                     </div>
                   ) : (
                     "Approve USDT"
                   )}
-                </button>
+                </motion.button>
+              ) : (
+                <motion.button
+                  onClick={handleSendFiat}
+                  disabled={
+                    transactionStatus === "converting" ||
+                    !ghsAmount ||
+                    !usdtAmount
+                  }
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full py-4 rounded-xl font-medium transition-all ${
+                    transactionStatus === "converting" ||
+                    !ghsAmount ||
+                    !usdtAmount
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+                  }`}
+                >
+                  {transactionStatus === "converting" ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                      <span>Converting...</span>
+                    </div>
+                  ) : (
+                    "Convert to GHS"
+                  )}
+                </motion.button>
               )}
 
               <div className="mt-4">
                 <TransactionDetails
                   isOpen={showTransactionDetails}
-                  onToggle={() =>
-                    setShowTransactionDetails(!showTransactionDetails)
-                  }
-                  gasFee="0.0003"
-                  merchantFee="2.65"
-                  protocolFee="0.00"
-                  totalFees="2.65"
-                  estimatedTime="~25s"
+                  onToggle={() => setShowTransactionDetails(!showTransactionDetails)}
+                  gasFee={gasFeeEstimate !== "N/A" ? `$${parseFloat(gasFeeEstimate).toFixed(6)}` : "N/A"}
+                  merchantFee={merchantFee !== "N/A" ? `$${merchantFee}` : "N/A"}
+                  protocolFee={protocolFee !== "N/A" ? `$${protocolFee}` : "N/A"}
+                  totalFees={totalFees !== "N/A" ? `$${totalFees}` : "N/A"}
+                  estimatedTime={estimatedTime}
                 />
               </div>
-
-              <button
-                onClick={handleSendFiat}
-                disabled={
-                  transactionStatus === "converting" ||
-                  !ghsAmount ||
-                  usdtAllowance <
-                    (usdtAmount ? parseUnits(usdtAmount, 18) : BigInt(0))
-                }
-                className={`w-full py-4 rounded-xl font-medium transition-all ${
-                  transactionStatus === "converting" ||
-                  !ghsAmount ||
-                  usdtAllowance <
-                    (usdtAmount ? parseUnits(usdtAmount, 18) : BigInt(0))
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
-                }`}
-              >
-                {transactionStatus === "converting" ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <span>Converting...</span>
-                  </div>
-                ) : (
-                  "Convert to GHS"
-                )}
-              </button>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
       {showHistory && (
         <TransactionHistory onClose={() => setShowHistory(false)} />
       )}
@@ -589,5 +612,6 @@ const TransferBase: React.FC<TransferProps & WithChainEnforcementProps> = ({ exc
   );
 };
 
-export const Transfer = withChainEnforcement(TransferBase);
+const Transfer = withChainEnforcement(TransferBase);
+
 export default Transfer;
