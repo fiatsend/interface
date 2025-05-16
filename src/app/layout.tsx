@@ -2,7 +2,6 @@
 
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/navbar";
 import { Toaster } from "react-hot-toast";
 import { PrivyProvider } from "@privy-io/react-auth";
 import StickyNavbar from "@/components/layout/StickyNavbar";
@@ -12,6 +11,7 @@ import { WagmiProvider } from "@privy-io/wagmi";
 import { config } from "@/config/wagmiConfig";
 import { liskSepolia } from "viem/chains";
 import { SmartWalletsProvider } from "@privy-io/react-auth/smart-wallets";
+import AppLayout from "@/components/layout/app-layout";
 
 const inter = Inter({ subsets: ["latin"] });
 const queryClient = new QueryClient();
@@ -53,14 +53,12 @@ export default function RootLayout({
           <QueryClientProvider client={queryClient}>
             <WagmiProvider config={config}>
               <SmartWalletsProvider>
-                <Navbar />
-                {children}
+                <AppLayout>{children}</AppLayout>
+                <Toaster position="top-center" />
               </SmartWalletsProvider>
-              <Toaster position="top-center" />
             </WagmiProvider>
           </QueryClientProvider>
         </PrivyProvider>
-
         <StickyNavbar />
       </body>
     </html>

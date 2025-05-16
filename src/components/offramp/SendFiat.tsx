@@ -6,7 +6,7 @@ import FiatSendABI from "@/abis/FiatSend.json";
 import TetherTokenABI from "@/abis/TetherToken.json";
 import { withChainEnforcement } from "@/hocs/with-chain-enforcement";
 
-const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
+const FIATSEND_ADDRESS = "0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d";
 const USDT_ADDRESS = "0xAE134a846a92CA8E7803CA075A1a0EE854Cd6168";
 
 interface SendFiatProps {
@@ -82,9 +82,10 @@ const SendFiatBase: React.FC<SendFiatProps> = ({ remainingLimit, handleAction })
     }
 
     await handleAction(async () => {
+      let toastId: string | undefined;
       try {
         setIsProcessing(true);
-        const toastId = toast.loading("Converting USDT to GHS...");
+        toastId = toast.loading("Converting USDT to GHS...");
 
         const parsedAmount = parseUnits(usdtAmount, 18);
         await sendFiat({
@@ -98,7 +99,11 @@ const SendFiatBase: React.FC<SendFiatProps> = ({ remainingLimit, handleAction })
         setGhsAmount("");
         setUsdtAmount("");
       } catch (error: any) {
-        handleTransactionError(error);
+        if (toastId) {
+          toast.error("Transaction failed. Please try again", { id: toastId });
+        } else {
+          handleTransactionError(error);
+        }
       } finally {
         setIsProcessing(false);
       }

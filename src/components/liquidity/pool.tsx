@@ -60,7 +60,7 @@ const PoolBase: React.FC<PoolProps> = ({ handleAction }) => {
   });
   const [exchangeRate, setExchangeRate] = useState<number>(0);
   const [poolBalance, setPoolBalance] = useState<number>(0);
-  const FIATSEND_ADDRESS = "0xb55B7EeCB4F13C15ab545C8C49e752B396aaD0BD";
+  const FIATSEND_ADDRESS = "0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d";
   const GHSFIAT_ADDRESS = "0x84Fd74850911d28C4B8A722b6CE8Aa0Df802f08A";
   const { address } = useAccount();
 

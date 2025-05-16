@@ -9,7 +9,7 @@ interface KYCCheckProps {
   onKYCStatus: (isVerified: boolean, limit: number) => void;
 }
 
-const FIATSEND_ADDRESS = "0x1731D34B07CA2235E668c7B0941d4BfAB370a2d0";
+const FIATSEND_ADDRESS = "0x1D683929B76cA50217C3B9C8CE4CcA9a0454a13d";
 
 // KYC levels and their corresponding limits in USDT
 const KYC_LIMITS = {
@@ -45,7 +45,7 @@ export const KYCCheck: React.FC<KYCCheckProps> = ({
     if (!kycLevel || !monthlySpent) return;
 
     const level = Number(kycLevel);
-    const spent = Number(formatUnits(monthlySpent as bigint, 6));
+    const spent = Number(formatUnits(monthlySpent as bigint, 18));
     const limit = KYC_LIMITS[level as keyof typeof KYC_LIMITS] || 0;
     const remainingLimit = limit - spent;
     const amountNum = Number(amount);

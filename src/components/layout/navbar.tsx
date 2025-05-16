@@ -9,6 +9,8 @@ import WalletDrawer from "../ui/drawer/wallet-drawer";
 import { useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import FSendTokenABI from "@/abis/FSEND.json";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaWallet, FaBook, FaBars } from "react-icons/fa";
 
 const FSEND_TOKEN_ADDRESS = "0x47e71D5B59A0c8cA50a7d5e268434aA0F7E171A2";
 
@@ -27,20 +29,24 @@ const TokenBalance = ({ userAddress }: { userAddress: string | null }) => {
     : "0.00";
 
   return (
-    <div className="hidden sm:flex items-center mr-4 px-3 py-2 rounded-lg bg-purple-50 border border-purple-100">
-      <div className="w-5 h-5 rounded-full bg-purple-100 p-0.5 mr-2 flex items-center justify-center">
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="hidden sm:flex items-center mr-4 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 shadow-sm"
+    >
+      <div className="w-6 h-6 rounded-full bg-white p-0.5 mr-2 flex items-center justify-center shadow-sm">
         <Image
           src="/images/fiatsend.png"
-          width={16}
-          height={16}
+          width={20}
+          height={20}
           alt="FSEND"
           className="rounded-full"
         />
       </div>
-      <span className="text-sm font-medium text-purple-600">
+      <span className="text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
         {formattedBalance} FSEND
       </span>
-    </div>
+    </motion.div>
   );
 };
 
@@ -63,7 +69,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed w-full mx-6 mt-6 mb-12 bg-white/80 border-b rounded-lg z-1000 border-gray-200">
+    <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left Side - Logo and Navigation */}
@@ -72,13 +82,15 @@ const Navbar = () => {
               href="/"
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             >
-              <Image
-                src="/images/fiatsend.png"
-                width={32}
-                height={32}
-                alt="FSEND"
-                className="rounded-full"
-              />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 p-0.5 shadow-sm">
+                <Image
+                  src="/images/fiatsend.png"
+                  width={28}
+                  height={28}
+                  alt="FSEND"
+                  className="rounded-full"
+                />
+              </div>
               <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 Offramps
               </span>
@@ -89,25 +101,37 @@ const Navbar = () => {
                 <React.Fragment key={item.name}>
                   {item.disabled ? (
                     <div className="relative group">
-                      <span className="px-3 py-2 rounded-lg text-sm text-gray-400 cursor-not-allowed">
+                      <span className="px-4 py-2 rounded-lg text-sm text-gray-400 cursor-not-allowed">
                         {item.name}
                       </span>
                       {item.comingSoon && (
-                        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-medium bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full">
+                        <motion.span
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="absolute -top-1 -right-1 px-2 py-0.5 text-[10px] font-medium bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full shadow-sm"
+                        >
                           Soon
-                        </span>
+                        </motion.span>
                       )}
                     </div>
                   ) : (
                     <Link
                       href={item.href}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${
                         pathname === item.href
                           ? "text-purple-600 bg-purple-50"
                           : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
                       }`}
                     >
                       {item.name}
+                      {pathname === item.href && (
+                        <motion.div
+                          layoutId="navbar-indicator"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+                          initial={false}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
                     </Link>
                   )}
                 </React.Fragment>
@@ -116,22 +140,10 @@ const Navbar = () => {
                 href="https://docs.fiatsend.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-all flex items-center space-x-1"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-all flex items-center space-x-2 group"
               >
                 <span>Guide</span>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
+                <FaBook className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </a>
             </div>
           </div>
@@ -141,46 +153,41 @@ const Navbar = () => {
             {authenticated && <TokenBalance userAddress={userAddress} />}
             <div className="hidden sm:block">
               {authenticated ? (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={toggleDrawer}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center space-x-2"
                 >
-                  Wallet
-                </button>
+                  <FaWallet className="w-4 h-4" />
+                  <span>Wallet</span>
+                </motion.button>
               ) : (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={login}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition"
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all"
                 >
                   Login
-                </button>
+                </motion.button>
               )}
             </div>
 
             {/* Mobile Menu Button */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={toggleDrawer}
               className="md:hidden p-2 rounded-lg hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-all"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-            </button>
+              <FaBars className="w-6 h-6" />
+            </motion.button>
           </div>
         </div>
       </div>
       <WalletDrawer isOpen={isDrawerOpen} onClose={toggleDrawer} />
-    </nav>
+    </motion.nav>
   );
 };
 
