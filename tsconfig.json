@@ -25,7 +25,11 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "types": [
+      // Remove 'minimatch' if present
+      // ... keep other types as needed ...
+    ]
   },
   "include": [
     "next-env.d.ts",
