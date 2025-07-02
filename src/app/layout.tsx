@@ -39,14 +39,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
         <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet" />
         <style>{`body { font-family: 'Sora', sans-serif; }`}</style>
-        <Script
-          src="https://cdn.markfi.xyz/scripts/analytics/0.11.21/cookie3.analytics.min.js"
-          integrity="sha384-wtYmYhbRlAqGwxc5Vb9GZVyp/Op3blmJICmXjRiJu2/TlPze5dHsmg2gglbH8viT"
-          crossOrigin="anonymous"
-          async
-          strategy="lazyOnload"
-          site-id="c50f717d-19ed-4031-a736-22ef49a545f0"
-        />
       </Head>
       <body className={inter.className}>
         <PrivyProvider
@@ -66,6 +58,13 @@ export default function RootLayout({
           </QueryClientProvider>
         </PrivyProvider>
         <StickyNavbar />
+        <Script
+          src="https://cdn.markfi.xyz/scripts/analytics/0.11.21/cookie3.analytics.min.js"
+          async
+          data-host="https://cookie3.xyz"
+          data-key="c50f717d-19ed-4031-a736-22ef49a545f0"
+          site-id="c50f717d-19ed-4031-a736-22ef49a545f0"
+        />
       </body>
     </html>
   );
