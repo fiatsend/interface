@@ -1,7 +1,7 @@
 {
   "name": "Fiatsend",
   "short_name": "fiatsend",
-  "description": "Fiatsend - Offramp USDT to GHS and more.",
+  "description": "Fiatsend - Send money in seconds",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#5D15F2",
